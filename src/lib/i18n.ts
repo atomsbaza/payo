@@ -1,0 +1,148 @@
+export const translations = {
+  th: {
+    // Navbar
+    brand: '⚡ Crypto Pay Link',
+    navDashboard: 'Dashboard',
+    navCreateLink: '+ สร้าง Link',
+
+    // Create page
+    createTitle: 'สร้าง Payment Link',
+    createSubtitle: 'เหมือน PromptPay แต่เป็น Crypto — แชร์ link แล้วรับเงินได้เลย',
+    labelAddress: 'Wallet Address ผู้รับ',
+    addressPlaceholder: '0x...',
+    useMyWallet: 'ใช้ของฉัน',
+    labelToken: 'Token',
+    labelAmount: 'จำนวน (ไม่ระบุ = ให้ผู้โอนกรอกเอง)',
+    amountPlaceholder: '0.00',
+    labelMemo: 'Memo / Note (optional)',
+    memoPlaceholder: 'เช่น ค่าข้าว, ค่า concert, ค่า freelance',
+    createButton: 'สร้าง Payment Link ⚡',
+    linkReady: 'Payment Link พร้อมแชร์แล้ว! 🎉',
+    viewDashboard: 'ดู links ทั้งหมดใน Dashboard →',
+
+    // Pay page
+    invalidLink: 'Payment link ไม่ถูกต้อง',
+    invalidLinkDesc: 'ลิงก์นี้อาจหมดอายุหรือเสียหาย',
+    paySuccess: 'โอนสำเร็จ! 🎉',
+    paySuccessDesc: (amount: string, token: string) => `${amount} ${token} ถึงมือผู้รับแล้ว`,
+    viewOnBasescan: 'ดู Transaction บน Basescan ↗',
+    payTitle: (amount: string, token: string) => `โอน ${amount} ${token}`,
+    payTitleNoAmount: (token: string) => `โอน ${token}`,
+    labelRecipient: 'ผู้รับ',
+    labelTokenField: 'Token',
+    labelNetwork: 'Network',
+    networkName: 'Base Sepolia (Testnet)',
+    labelCustomAmount: 'จำนวนที่จะโอน',
+    errorRejected: 'ยกเลิกการโอน',
+    connectToPayBtn: 'Connect Wallet เพื่อโอน',
+    waitingWallet: '⏳ รอ approve ใน wallet...',
+    waitingConfirm: '⏳ รอ confirmation...',
+    payBtn: (amount: string, token: string) => `โอน ${amount} ${token} →`,
+
+    // Dashboard
+    dashTitle: 'Dashboard',
+    dashSubtitle: 'ติดตามการรับ crypto ของคุณ',
+    connectPrompt: 'Connect wallet เพื่อดู dashboard',
+    statsLinks: 'Links ทั้งหมด',
+    statsTx: 'TX ที่รับได้',
+    statsWallet: 'Wallet',
+    tabLinks: 'Payment Links',
+    tabTx: 'TX ที่รับ',
+    emptyLinks: 'ยังไม่มี payment link',
+    emptyLinksBtn: 'สร้าง Payment Link แรก ⚡',
+    noAmount: (token: string) => `${token} (ไม่ระบุจำนวน)`,
+    btnCopy: 'Copy',
+    btnCopied: '✓',
+    btnOpen: 'Open ↗',
+    btnDelete: 'ลบ',
+    txLoading: 'กำลังโหลด transaction history...',
+    emptyTx: 'ยังไม่มี incoming transactions',
+    emptyTxDesc: 'transactions จาก Base Sepolia จะแสดงที่นี่',
+    totalReceived: 'Total ETH received',
+    txFrom: (from: string, date: string) => `จาก ${from} • ${date}`,
+
+    // WrongNetworkBanner
+    wrongNetwork: 'กรุณาเปลี่ยน network เป็น Base Sepolia',
+    switchNetwork: 'Switch Network',
+    switching: 'กำลังเปลี่ยน...',
+
+    // QRDisplay
+    copyLink: 'Copy',
+    copiedLink: 'Copied!',
+  },
+
+  en: {
+    // Navbar
+    brand: '⚡ Crypto Pay Link',
+    navDashboard: 'Dashboard',
+    navCreateLink: '+ Create Link',
+
+    // Create page
+    createTitle: 'Create Payment Link',
+    createSubtitle: 'Like PromptPay but for Crypto — share a link and receive funds instantly',
+    labelAddress: 'Recipient Wallet Address',
+    addressPlaceholder: '0x...',
+    useMyWallet: 'Use Mine',
+    labelToken: 'Token',
+    labelAmount: 'Amount (leave blank to let payer decide)',
+    amountPlaceholder: '0.00',
+    labelMemo: 'Memo / Note (optional)',
+    memoPlaceholder: 'e.g. lunch, concert ticket, freelance work',
+    createButton: 'Create Payment Link ⚡',
+    linkReady: 'Payment Link Ready! 🎉',
+    viewDashboard: 'View all links in Dashboard →',
+
+    // Pay page
+    invalidLink: 'Invalid Payment Link',
+    invalidLinkDesc: 'This link may have expired or is corrupted',
+    paySuccess: 'Payment Successful! 🎉',
+    paySuccessDesc: (amount: string, token: string) => `${amount} ${token} has been sent to the recipient`,
+    viewOnBasescan: 'View Transaction on Basescan ↗',
+    payTitle: (amount: string, token: string) => `Send ${amount} ${token}`,
+    payTitleNoAmount: (token: string) => `Send ${token}`,
+    labelRecipient: 'Recipient',
+    labelTokenField: 'Token',
+    labelNetwork: 'Network',
+    networkName: 'Base Sepolia (Testnet)',
+    labelCustomAmount: 'Amount to Send',
+    errorRejected: 'Transaction rejected',
+    connectToPayBtn: 'Connect Wallet to Pay',
+    waitingWallet: '⏳ Waiting for wallet approval...',
+    waitingConfirm: '⏳ Waiting for confirmation...',
+    payBtn: (amount: string, token: string) => `Send ${amount} ${token} →`,
+
+    // Dashboard
+    dashTitle: 'Dashboard',
+    dashSubtitle: 'Track your incoming crypto payments',
+    connectPrompt: 'Connect your wallet to view dashboard',
+    statsLinks: 'Total Links',
+    statsTx: 'TX Received',
+    statsWallet: 'Wallet',
+    tabLinks: 'Payment Links',
+    tabTx: 'TX Received',
+    emptyLinks: 'No payment links yet',
+    emptyLinksBtn: 'Create Your First Payment Link ⚡',
+    noAmount: (token: string) => `${token} (any amount)`,
+    btnCopy: 'Copy',
+    btnCopied: '✓',
+    btnOpen: 'Open ↗',
+    btnDelete: 'Delete',
+    txLoading: 'Loading transaction history...',
+    emptyTx: 'No incoming transactions yet',
+    emptyTxDesc: 'Transactions from Base Sepolia will appear here',
+    totalReceived: 'Total ETH received',
+    txFrom: (from: string, date: string) => `From ${from} • ${date}`,
+
+    // WrongNetworkBanner
+    wrongNetwork: 'Please switch network to Base Sepolia',
+    switchNetwork: 'Switch Network',
+    switching: 'Switching...',
+
+    // QRDisplay
+    copyLink: 'Copy',
+    copiedLink: 'Copied!',
+  },
+}
+
+export type Lang = keyof typeof translations
+export type Translations = typeof translations.th

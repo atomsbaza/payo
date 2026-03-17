@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti'
 import { decodePaymentLink, shortAddress } from '@/lib/encode'
 import { getToken, ERC20_ABI } from '@/lib/tokens'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
+import { useLang } from '@/context/LangContext'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -16,6 +17,7 @@ type Props = {
 export default function PayPage({ params }: Props) {
   const { id } = use(params)
   const { isConnected } = useAccount()
+  const { t, lang, toggleLang } = useLang()
   const [customAmount, setCustomAmount] = useState('')
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
   const [error, setError] = useState('')
@@ -44,8 +46,8 @@ export default function PayPage({ params }: Props) {
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-6xl mb-4">❌</p>
-          <h1 className="text-xl font-bold mb-2">Payment link ไม่ถูกต้อง</h1>
-          <p className="text-gray-400">ลิงก์นี้อาจหมดอายุหรือเสียหาย</p>
+          <h1 className="text-xl font-bold mb-2">{t.invalidLink}</h1>
+          <p className="text-gray-400">{t.invalidLinkDesc}</p>
         </div>
       </div>
     )
@@ -77,7 +79,7 @@ export default function PayPage({ params }: Props) {
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(
-          err.message.includes('User rejected') ? 'ยกเลิกการโอน' : err.message.slice(0, 120)
+          err.message.includes('User rejected') ? t.errorRejected : err.message.slice(0, 120)
         )
       }
     }
@@ -88,10 +90,9 @@ export default function PayPage({ params }: Props) {
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-6">
         <div className="text-center max-w-sm w-full">
           <div className="text-7xl mb-4">🎉</div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">โอนสำเร็จ!</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t.paySuccess}</h1>
           <p className="text-gray-400 mb-2">
-            <span className="text-white font-semibold">{effectiveAmount} {data.token}</span>{' '}
-            ถึงมือผู้รับแล้ว
+            {t.paySuccessDesc(effectiveAmount, data.token)}
           </p>
           <p className="text-xs text-gray-600 mb-6 font-mono">{shortAddress(data.address)}</p>
           <a
@@ -100,7 +101,7 @@ export default function PayPage({ params }: Props) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl text-sm transition-colors"
           >
-            ดู Transaction บน Basescan ↗
+            {t.viewOnBasescan}
           </a>
         </div>
       </div>
@@ -109,7 +110,6 @@ export default function PayPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Wrong network banner */}
       {isConnected && <WrongNetworkBanner />}
 
       {/* Navbar */}
@@ -118,7 +118,15 @@ export default function PayPage({ params }: Props) {
           <span className="text-xl font-bold text-indigo-400">⚡</span>
           <span className="font-bold text-base sm:text-lg">Crypto Pay Link</span>
         </div>
-        <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleLang}
+            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
+          >
+            {lang === 'th' ? 'EN' : 'TH'}
+          </button>
+          <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
+        </div>
       </nav>
 
       <main className="max-w-sm mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -129,7 +137,9 @@ export default function PayPage({ params }: Props) {
               <span className="text-2xl">💸</span>
             </div>
             <h1 className="text-lg sm:text-xl font-bold">
-              {data.amount ? `โอน ${data.amount} ${data.token}` : `โอน ${data.token}`}
+              {data.amount
+                ? t.payTitle(data.amount, data.token)
+                : t.payTitleNoAmount(data.token)}
             </h1>
             {data.memo && (
               <p className="text-gray-400 mt-1 text-sm">"{data.memo}"</p>
@@ -138,16 +148,16 @@ export default function PayPage({ params }: Props) {
 
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">ผู้รับ</span>
+              <span className="text-gray-500">{t.labelRecipient}</span>
               <span className="font-mono text-gray-200 text-xs sm:text-sm">{shortAddress(data.address)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Token</span>
+              <span className="text-gray-500">{t.labelTokenField}</span>
               <span className="font-medium">{data.token}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Network</span>
-              <span className="text-green-400 text-xs">Base Sepolia (Testnet)</span>
+              <span className="text-gray-500">{t.labelNetwork}</span>
+              <span className="text-green-400 text-xs">{t.networkName}</span>
             </div>
           </div>
         </div>
@@ -155,7 +165,7 @@ export default function PayPage({ params }: Props) {
         {/* Custom amount if not fixed */}
         {!data.amount && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">จำนวนที่จะโอน</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t.labelCustomAmount}</label>
             <div className="relative">
               <input
                 type="number"
@@ -183,7 +193,7 @@ export default function PayPage({ params }: Props) {
         {/* Action */}
         {!isConnected ? (
           <div className="flex justify-center">
-            <ConnectButton label="Connect Wallet เพื่อโอน" />
+            <ConnectButton label={t.connectToPayBtn} />
           </div>
         ) : (
           <button
@@ -192,10 +202,10 @@ export default function PayPage({ params }: Props) {
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors text-sm sm:text-base"
           >
             {isConfirming
-              ? '⏳ รอ confirmation...'
+              ? t.waitingConfirm
               : isPending
-              ? '⏳ รอ approve ใน wallet...'
-              : `โอน ${effectiveAmount || '?'} ${data.token} →`}
+              ? t.waitingWallet
+              : t.payBtn(effectiveAmount || '?', data.token)}
           </button>
         )}
       </main>

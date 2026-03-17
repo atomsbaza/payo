@@ -7,10 +7,12 @@ import { encodePaymentLink } from '@/lib/encode'
 import { TokenSelector } from '@/components/TokenSelector'
 import { QRDisplay } from '@/components/QRDisplay'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
+import { useLang } from '@/context/LangContext'
 import { baseSepolia } from 'wagmi/chains'
 
 export default function CreatePage() {
   const { address, isConnected } = useAccount()
+  const { t, lang, toggleLang } = useLang()
 
   const [recipientAddress, setRecipientAddress] = useState('')
   const [token, setToken] = useState('ETH')
@@ -45,7 +47,6 @@ export default function CreatePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Wrong network banner */}
       {isConnected && <WrongNetworkBanner />}
 
       {/* Navbar */}
@@ -55,11 +56,17 @@ export default function CreatePage() {
           <span className="font-bold text-base sm:text-lg">Crypto Pay Link</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={toggleLang}
+            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
+          >
+            {lang === 'th' ? 'EN' : 'TH'}
+          </button>
           <a
             href="/dashboard"
             className="hidden sm:block text-sm text-gray-400 hover:text-white transition-colors"
           >
-            Dashboard
+            {t.navDashboard}
           </a>
           <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
         </div>
@@ -67,22 +74,20 @@ export default function CreatePage() {
 
       <main className="max-w-lg mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">สร้าง Payment Link</h1>
-          <p className="text-sm sm:text-base text-gray-400">
-            เหมือน PromptPay แต่เป็น Crypto — แชร์ link แล้วรับเงินได้เลย
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t.createTitle}</h1>
+          <p className="text-sm sm:text-base text-gray-400">{t.createSubtitle}</p>
         </div>
 
         <div className="space-y-4 sm:space-y-5">
           {/* Recipient address */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Wallet Address ผู้รับ
+              {t.labelAddress}
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="0x..."
+                placeholder={t.addressPlaceholder}
                 value={recipientAddress}
                 onChange={(e) => setRecipientAddress(e.target.value)}
                 className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
@@ -93,7 +98,7 @@ export default function CreatePage() {
                   onClick={useMyAddress}
                   className="shrink-0 px-3 py-2 text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl hover:bg-indigo-500/30 transition-colors whitespace-nowrap"
                 >
-                  ใช้ของฉัน
+                  {t.useMyWallet}
                 </button>
               )}
             </div>
@@ -101,20 +106,19 @@ export default function CreatePage() {
 
           {/* Token */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Token</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t.labelToken}</label>
             <TokenSelector value={token} onChange={setToken} />
           </div>
 
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              จำนวน{' '}
-              <span className="text-gray-500 font-normal">(ไม่ระบุ = ให้ผู้โอนกรอกเอง)</span>
+              {t.labelAmount}
             </label>
             <div className="relative">
               <input
                 type="number"
-                placeholder="0.00"
+                placeholder={t.amountPlaceholder}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 min="0"
@@ -130,11 +134,11 @@ export default function CreatePage() {
           {/* Memo */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Memo / Note <span className="text-gray-500 font-normal">(optional)</span>
+              {t.labelMemo}
             </label>
             <input
               type="text"
-              placeholder="เช่น ค่าข้าว, ค่า concert, ค่า freelance"
+              placeholder={t.memoPlaceholder}
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
@@ -147,7 +151,7 @@ export default function CreatePage() {
             disabled={!recipientAddress.trim()}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors"
           >
-            สร้าง Payment Link ⚡
+            {t.createButton}
           </button>
         </div>
 
@@ -155,7 +159,7 @@ export default function CreatePage() {
         {generatedUrl && (
           <div className="mt-6 sm:mt-8 p-5 sm:p-6 bg-white/5 border border-white/10 rounded-2xl">
             <h2 className="text-base sm:text-lg font-semibold mb-4 text-center">
-              Payment Link พร้อมแชร์แล้ว! 🎉
+              {t.linkReady}
             </h2>
             <QRDisplay url={generatedUrl} />
 
@@ -182,7 +186,7 @@ export default function CreatePage() {
               href="/dashboard"
               className="mt-4 block text-center text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
-              ดู links ทั้งหมดใน Dashboard →
+              {t.viewDashboard}
             </a>
           </div>
         )}

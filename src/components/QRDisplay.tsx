@@ -2,6 +2,7 @@
 
 import { QRCodeSVG } from 'qrcode.react'
 import { useState } from 'react'
+import { useLang } from '@/context/LangContext'
 
 type Props = {
   url: string
@@ -9,6 +10,7 @@ type Props = {
 
 export function QRDisplay({ url }: Props) {
   const [copied, setCopied] = useState(false)
+  const { t } = useLang()
 
   async function handleCopy() {
     await navigator.clipboard.writeText(url)
@@ -29,7 +31,7 @@ export function QRDisplay({ url }: Props) {
             onClick={handleCopy}
             className="shrink-0 text-xs px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
           >
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? t.copiedLink : t.copyLink}
           </button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatEther } from 'viem'
 import { shortAddress } from '@/lib/encode'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
+import { useLang } from '@/context/LangContext'
 
 type SavedLink = {
   url: string
@@ -26,6 +27,7 @@ type BasescanTx = {
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
+  const { t, lang, toggleLang } = useLang()
   const [myLinks, setMyLinks] = useState<SavedLink[]>([])
   const [copiedUrl, setCopiedUrl] = useState('')
   const [txHistory, setTxHistory] = useState<BasescanTx[]>([])
@@ -37,7 +39,6 @@ export default function DashboardPage() {
     if (stored) setMyLinks(JSON.parse(stored))
   }, [])
 
-  // Fetch Basescan tx history when wallet connects
   useEffect(() => {
     if (!address) return
     setTxLoading(true)
@@ -61,7 +62,7 @@ export default function DashboardPage() {
   }
 
   function formatDate(ts: string) {
-    return new Date(Number(ts) * 1000).toLocaleDateString('th-TH', {
+    return new Date(Number(ts) * 1000).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', {
       day: 'numeric',
       month: 'short',
       hour: '2-digit',
@@ -80,7 +81,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Wrong network banner */}
       {isConnected && <WrongNetworkBanner />}
 
       {/* Navbar */}
@@ -90,11 +90,17 @@ export default function DashboardPage() {
           <span className="font-bold text-base sm:text-lg">Crypto Pay Link</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={toggleLang}
+            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
+          >
+            {lang === 'th' ? 'EN' : 'TH'}
+          </button>
           <a
             href="/create"
             className="text-xs sm:text-sm px-3 py-1.5 sm:px-0 sm:py-0 bg-indigo-600 sm:bg-transparent hover:bg-indigo-500 sm:hover:bg-transparent text-white sm:text-gray-400 sm:hover:text-white rounded-lg sm:rounded-none font-medium transition-colors"
           >
-            + สร้าง Link
+            {t.navCreateLink}
           </a>
           <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
         </div>
@@ -102,14 +108,14 @@ export default function DashboardPage() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1">Dashboard</h1>
-          <p className="text-sm text-gray-400">ติดตามการรับ crypto ของคุณ</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1">{t.dashTitle}</h1>
+          <p className="text-sm text-gray-400">{t.dashSubtitle}</p>
         </div>
 
         {!isConnected && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <span className="text-5xl mb-4">🔒</span>
-            <p className="text-gray-400 mb-6">Connect wallet เพื่อดู dashboard</p>
+            <p className="text-gray-400 mb-6">{t.connectPrompt}</p>
             <ConnectButton />
           </div>
         )}
@@ -120,17 +126,17 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
                 <p className="text-xl sm:text-2xl font-bold">{myLinks.length}</p>
-                <p className="text-xs sm:text-sm text-gray-400">Links ทั้งหมด</p>
+                <p className="text-xs sm:text-sm text-gray-400">{t.statsLinks}</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
                 <p className="text-xl sm:text-2xl font-bold text-green-400">{txHistory.length}</p>
-                <p className="text-xs sm:text-sm text-gray-400">TX ที่รับได้</p>
+                <p className="text-xs sm:text-sm text-gray-400">{t.statsTx}</p>
               </div>
               <div className="col-span-2 sm:col-span-1 bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
                 <p className="text-sm sm:text-base font-bold text-indigo-400 truncate">
                   {shortAddress(address ?? '')}
                 </p>
-                <p className="text-xs sm:text-sm text-gray-400">Wallet</p>
+                <p className="text-xs sm:text-sm text-gray-400">{t.statsWallet}</p>
               </div>
             </div>
 
@@ -144,7 +150,7 @@ export default function DashboardPage() {
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
-                Payment Links
+                {t.tabLinks}
               </button>
               <button
                 onClick={() => setActiveTab('history')}
@@ -154,7 +160,7 @@ export default function DashboardPage() {
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
               >
-                TX ที่รับ
+                {t.tabTx}
                 {txHistory.length > 0 && (
                   <span className="text-xs bg-indigo-500/30 text-indigo-400 px-1.5 py-0.5 rounded-full">
                     {txHistory.length}
@@ -169,12 +175,12 @@ export default function DashboardPage() {
                 {myLinks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <span className="text-4xl mb-3">📭</span>
-                    <p className="text-gray-400 mb-4 text-sm">ยังไม่มี payment link</p>
+                    <p className="text-gray-400 mb-4 text-sm">{t.emptyLinks}</p>
                     <a
                       href="/create"
                       className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-colors"
                     >
-                      สร้าง Payment Link แรก ⚡
+                      {t.emptyLinksBtn}
                     </a>
                   </div>
                 ) : (
@@ -189,7 +195,7 @@ export default function DashboardPage() {
                             <span className="font-medium text-sm">
                               {link.amount
                                 ? `${link.amount} ${link.token}`
-                                : `${link.token} (ไม่ระบุจำนวน)`}
+                                : t.noAmount(link.token)}
                             </span>
                             <span className="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-full">
                               {link.token}
@@ -200,7 +206,7 @@ export default function DashboardPage() {
                           )}
                           <p className="text-xs text-gray-500">
                             {shortAddress(link.address)} •{' '}
-                            {new Date(link.createdAt).toLocaleDateString('th-TH')}
+                            {new Date(link.createdAt).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US')}
                           </p>
                         </div>
                         <div className="flex gap-1.5 sm:gap-2 shrink-0">
@@ -208,7 +214,7 @@ export default function DashboardPage() {
                             onClick={() => handleCopy(link.url)}
                             className="text-xs px-2.5 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
                           >
-                            {copiedUrl === link.url ? '✓' : 'Copy'}
+                            {copiedUrl === link.url ? t.btnCopied : t.btnCopy}
                           </button>
                           <a
                             href={link.url}
@@ -216,13 +222,13 @@ export default function DashboardPage() {
                             rel="noopener noreferrer"
                             className="text-xs px-2.5 sm:px-3 py-1.5 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 rounded-lg transition-colors"
                           >
-                            Open ↗
+                            {t.btnOpen}
                           </a>
                           <button
                             onClick={() => handleDelete(idx)}
                             className="text-xs px-2.5 sm:px-3 py-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
                           >
-                            ลบ
+                            {t.btnDelete}
                           </button>
                         </div>
                       </div>
@@ -232,27 +238,24 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tab: TX History from Basescan */}
+            {/* Tab: TX History */}
             {activeTab === 'history' && (
               <div className="space-y-3">
                 {txLoading ? (
                   <div className="flex items-center justify-center py-12 gap-3 text-gray-400">
                     <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">กำลังโหลด transaction history...</span>
+                    <span className="text-sm">{t.txLoading}</span>
                   </div>
                 ) : txHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <span className="text-4xl mb-3">📊</span>
-                    <p className="text-gray-400 text-sm">ยังไม่มี incoming transactions</p>
-                    <p className="text-gray-600 text-xs mt-1">
-                      transactions จาก Base Sepolia จะแสดงที่นี่
-                    </p>
+                    <p className="text-gray-400 text-sm">{t.emptyTx}</p>
+                    <p className="text-gray-600 text-xs mt-1">{t.emptyTxDesc}</p>
                   </div>
                 ) : (
                   <>
-                    {/* Total summary */}
                     <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2">
-                      <p className="text-xs text-indigo-400 mb-1">Total ETH received</p>
+                      <p className="text-xs text-indigo-400 mb-1">{t.totalReceived}</p>
                       <p className="text-2xl font-bold">
                         {txHistory
                           .reduce((sum, tx) => sum + parseFloat(formatEthValue(tx.value)), 0)
@@ -272,7 +275,7 @@ export default function DashboardPage() {
                               + {formatEthValue(tx.value)} ETH
                             </span>
                             <p className="text-xs text-gray-500 mt-1.5">
-                              จาก {shortAddress(tx.from)} • {formatDate(tx.timeStamp)}
+                              {t.txFrom(shortAddress(tx.from), formatDate(tx.timeStamp))}
                             </p>
                           </div>
                           <a
