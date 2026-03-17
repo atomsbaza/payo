@@ -21,6 +21,7 @@ export default function PayPage({ params }: Props) {
   const [customAmount, setCustomAmount] = useState('')
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
   const [error, setError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
 
   const data = decodePaymentLink(id)
   const token = data ? getToken(data.token) : undefined
@@ -117,10 +118,17 @@ export default function PayPage({ params }: Props) {
       }
       setTxHash(hash)
     } catch (err: unknown) {
+      setRetryCount(c => c + 1)
       if (err instanceof Error) {
-        setError(
-          err.message.includes('User rejected') ? t.errorRejected : err.message.slice(0, 120)
-        )
+        const msg = err.message
+        if (msg.includes('User rejected') || msg.includes('user rejected'))
+          setError(t.errorRejected)
+        else if (msg.includes('insufficient funds') || msg.includes('InsufficientFunds'))
+          setError(t.errorInsufficientFunds)
+        else if (msg.includes('network') || msg.includes('Network') || msg.includes('timeout'))
+          setError(t.errorNetwork)
+        else
+          setError(t.errorGeneric)
       }
     }
   }
@@ -248,8 +256,17 @@ export default function PayPage({ params }: Props) {
 
         {/* Error */}
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-            {error}
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm">
+            <p className="text-red-400 mb-3">{error}</p>
+            {retryCount > 0 && (
+              <p className="text-red-400/60 text-xs mb-3">{t.retryCount(retryCount)}</p>
+            )}
+            <button
+              onClick={() => { setError(''); handlePay() }}
+              className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-sm font-medium transition-colors"
+            >
+              🔄 {t.retryBtn}
+            </button>
           </div>
         )}
 
