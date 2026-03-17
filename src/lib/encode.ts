@@ -4,6 +4,7 @@ export type PaymentLinkData = {
   amount: string      // optional, empty string = let payer decide
   memo: string        // optional note
   chainId: number
+  expiresAt?: number  // optional unix timestamp (ms), undefined = no expiry
 }
 
 export function encodePaymentLink(data: PaymentLinkData): string {
@@ -24,6 +25,11 @@ export function decodePaymentLink(id: string): PaymentLinkData | null {
   } catch {
     return null
   }
+}
+
+export function isLinkExpired(data: PaymentLinkData): boolean {
+  if (!data.expiresAt) return false
+  return Date.now() > data.expiresAt
 }
 
 export function shortAddress(address: string): string {

@@ -1,11 +1,11 @@
 'use client'
 
 import { use, useEffect, useState } from 'react'
-import { useAccount, useSendTransaction, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useBalance, useReadContract, useSendTransaction, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { parseEther, parseUnits } from 'viem'
+import { parseEther, parseUnits, formatUnits } from 'viem'
 import confetti from 'canvas-confetti'
-import { decodePaymentLink, shortAddress } from '@/lib/encode'
+import { decodePaymentLink, isLinkExpired, shortAddress } from '@/lib/encode'
 import { getToken, ERC20_ABI } from '@/lib/tokens'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { useLang } from '@/context/LangContext'
@@ -16,13 +16,32 @@ type Props = {
 
 export default function PayPage({ params }: Props) {
   const { id } = use(params)
-  const { isConnected } = useAccount()
+  const { address, isConnected } = useAccount()
   const { t, lang, toggleLang } = useLang()
   const [customAmount, setCustomAmount] = useState('')
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
   const [error, setError] = useState('')
 
   const data = decodePaymentLink(id)
+  const token = data ? getToken(data.token) : undefined
+
+  // Token balance
+  const { data: ethBalance } = useBalance({
+    address,
+    query: { enabled: !!address && token?.address === 'native' },
+  })
+  const { data: erc20Balance } = useReadContract({
+    address: token?.address !== 'native' ? token?.address as `0x${string}` : undefined,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && !!token && token.address !== 'native' },
+  })
+
+  const balanceRaw = token?.address === 'native' ? ethBalance?.value : (erc20Balance as bigint | undefined)
+  const balanceFormatted = balanceRaw !== undefined && token
+    ? parseFloat(formatUnits(balanceRaw, token.decimals)).toFixed(token.decimals === 18 ? 4 : 2)
+    : null
 
   const { sendTransactionAsync, isPending: isEthPending } = useSendTransaction()
   const { writeContractAsync, isPending: isErc20Pending } = useWriteContract()
@@ -41,6 +60,7 @@ export default function PayPage({ params }: Props) {
     frame()
   }, [isSuccess])
 
+  // Invalid link
   if (!data) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
@@ -53,9 +73,29 @@ export default function PayPage({ params }: Props) {
     )
   }
 
-  const token = getToken(data.token)
+  // Expired link
+  if (isLinkExpired(data)) {
+    const expiredDate = new Date(data.expiresAt!).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US')
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-6xl mb-4">⏰</p>
+          <h1 className="text-xl font-bold mb-2">{t.expiredLink}</h1>
+          <p className="text-gray-400">{t.expiredLinkDesc(expiredDate)}</p>
+        </div>
+      </div>
+    )
+  }
+
   const effectiveAmount = data.amount || customAmount
   const isPending = isEthPending || isErc20Pending
+
+  // Check insufficient balance
+  const isInsufficient = balanceRaw !== undefined && effectiveAmount
+    ? balanceRaw < (token?.address === 'native'
+        ? parseEther(effectiveAmount)
+        : parseUnits(effectiveAmount, token?.decimals ?? 18))
+    : false
 
   async function handlePay() {
     if (!effectiveAmount || !token) return
@@ -159,6 +199,14 @@ export default function PayPage({ params }: Props) {
               <span className="text-gray-500">{t.labelNetwork}</span>
               <span className="text-green-400 text-xs">{t.networkName}</span>
             </div>
+            {data.expiresAt && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">{t.labelExpiry}</span>
+                <span className="text-amber-400 text-xs">
+                  ⏰ {new Date(data.expiresAt).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -183,6 +231,21 @@ export default function PayPage({ params }: Props) {
           </div>
         )}
 
+        {/* Token balance */}
+        {isConnected && balanceFormatted !== null && (
+          <div className={`mb-4 flex items-center justify-between px-4 py-2.5 rounded-xl text-sm border ${
+            isInsufficient
+              ? 'bg-red-500/10 border-red-500/20 text-red-400'
+              : 'bg-white/5 border-white/10 text-gray-400'
+          }`}>
+            <span>{t.labelBalance}</span>
+            <span className={`font-medium ${isInsufficient ? 'text-red-400' : 'text-white'}`}>
+              {balanceFormatted} {data.token}
+              {isInsufficient && <span className="ml-2 text-xs">⚠️ {t.insufficientBalance}</span>}
+            </span>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
@@ -198,7 +261,7 @@ export default function PayPage({ params }: Props) {
         ) : (
           <button
             onClick={handlePay}
-            disabled={!effectiveAmount || isPending || isConfirming}
+            disabled={!effectiveAmount || isPending || isConfirming || isInsufficient}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors text-sm sm:text-base"
           >
             {isConfirming

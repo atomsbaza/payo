@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { encodePaymentLink } from '@/lib/encode'
@@ -10,6 +10,13 @@ import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { useLang } from '@/context/LangContext'
 import { baseSepolia } from 'wagmi/chains'
 
+const EXPIRY_OPTIONS = [
+  { value: '0', labelKey: 'expiryNone' as const },
+  { value: '1', labelKey: 'expiry1d' as const },
+  { value: '7', labelKey: 'expiry7d' as const },
+  { value: '30', labelKey: 'expiry30d' as const },
+]
+
 export default function CreatePage() {
   const { address, isConnected } = useAccount()
   const { t, lang, toggleLang } = useLang()
@@ -18,32 +25,44 @@ export default function CreatePage() {
   const [token, setToken] = useState('ETH')
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
-  const [generatedUrl, setGeneratedUrl] = useState('')
+  const [expiryDays, setExpiryDays] = useState('0')
+  const [saved, setSaved] = useState(false)
 
-  function useMyAddress() {
-    if (address) setRecipientAddress(address)
-  }
-
-  function handleGenerate() {
+  // Dynamic QR — recomputes live as form changes
+  const liveUrl = useMemo(() => {
     const target = recipientAddress.trim()
-    if (!target) return
-
+    if (!target || target.length < 10) return ''
+    const expiresAt = expiryDays !== '0'
+      ? Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000
+      : undefined
     const encoded = encodePaymentLink({
       address: target,
       token,
       amount: amount.trim(),
       memo: memo.trim(),
       chainId: baseSepolia.id,
+      ...(expiresAt ? { expiresAt } : {}),
     })
+    return `${typeof window !== 'undefined' ? window.location.origin : ''}/pay/${encoded}`
+  }, [recipientAddress, token, amount, memo, expiryDays])
 
-    const url = `${window.location.origin}/pay/${encoded}`
-    setGeneratedUrl(url)
-
-    // Save to localStorage for dashboard
-    const existing = JSON.parse(localStorage.getItem('myLinks') ?? '[]')
-    const newLink = { url, address: target, token, amount, memo, createdAt: Date.now() }
-    localStorage.setItem('myLinks', JSON.stringify([newLink, ...existing].slice(0, 50)))
+  function useMyAddress() {
+    if (address) setRecipientAddress(address)
   }
+
+  function handleSave() {
+    if (!liveUrl) return
+    const target = recipientAddress.trim()
+    const existing = JSON.parse(localStorage.getItem('myLinks') ?? '[]')
+    const newLink = { url: liveUrl, address: target, token, amount, memo, createdAt: Date.now() }
+    localStorage.setItem('myLinks', JSON.stringify([newLink, ...existing].slice(0, 50)))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const expiryLabel = expiryDays !== '0'
+    ? t.expiresOn(new Date(Date.now() + Number(expiryDays) * 86400000).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US'))
+    : ''
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -89,7 +108,7 @@ export default function CreatePage() {
                 type="text"
                 placeholder={t.addressPlaceholder}
                 value={recipientAddress}
-                onChange={(e) => setRecipientAddress(e.target.value)}
+                onChange={(e) => { setRecipientAddress(e.target.value); setSaved(false) }}
                 className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
               />
               {isConnected && (
@@ -107,7 +126,7 @@ export default function CreatePage() {
           {/* Token */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t.labelToken}</label>
-            <TokenSelector value={token} onChange={setToken} />
+            <TokenSelector value={token} onChange={(v) => { setToken(v); setSaved(false) }} />
           </div>
 
           {/* Amount */}
@@ -120,7 +139,7 @@ export default function CreatePage() {
                 type="number"
                 placeholder={t.amountPlaceholder}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => { setAmount(e.target.value); setSaved(false) }}
                 min="0"
                 step="any"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors pr-16"
@@ -140,28 +159,45 @@ export default function CreatePage() {
               type="text"
               placeholder={t.memoPlaceholder}
               value={memo}
-              onChange={(e) => setMemo(e.target.value)}
+              onChange={(e) => { setMemo(e.target.value); setSaved(false) }}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
-          {/* Generate button */}
-          <button
-            onClick={handleGenerate}
-            disabled={!recipientAddress.trim()}
-            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors"
-          >
-            {t.createButton}
-          </button>
+          {/* Expiry */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {t.labelExpiry}
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {EXPIRY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => { setExpiryDays(opt.value); setSaved(false) }}
+                  className={`px-3 py-2 text-xs rounded-xl border transition-colors ${
+                    expiryDays === opt.value
+                      ? 'bg-indigo-600 border-indigo-500 text-white'
+                      : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                  }`}
+                >
+                  {t[opt.labelKey]}
+                </button>
+              ))}
+            </div>
+            {expiryLabel && (
+              <p className="text-xs text-amber-400 mt-2">⏰ {expiryLabel}</p>
+            )}
+          </div>
         </div>
 
-        {/* Generated QR */}
-        {generatedUrl && (
+        {/* Dynamic QR — shows as soon as address is valid */}
+        {liveUrl ? (
           <div className="mt-6 sm:mt-8 p-5 sm:p-6 bg-white/5 border border-white/10 rounded-2xl">
             <h2 className="text-base sm:text-lg font-semibold mb-4 text-center">
               {t.linkReady}
             </h2>
-            <QRDisplay url={generatedUrl} />
+            <QRDisplay url={liveUrl} />
 
             <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-3 text-sm">
               <div>
@@ -180,14 +216,37 @@ export default function CreatePage() {
                   <p className="font-medium">{memo}</p>
                 </div>
               )}
+              {expiryLabel && (
+                <div className="col-span-2">
+                  <span className="text-gray-500">{t.labelExpiry}</span>
+                  <p className="font-medium text-amber-400 text-xs">{expiryLabel}</p>
+                </div>
+              )}
             </div>
+
+            {/* Save to dashboard button */}
+            <button
+              onClick={handleSave}
+              className={`mt-4 w-full py-3 rounded-xl text-sm font-semibold transition-colors ${
+                saved
+                  ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+              }`}
+            >
+              {saved ? t.saveButton : t.createButton}
+            </button>
 
             <a
               href="/dashboard"
-              className="mt-4 block text-center text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              className="mt-3 block text-center text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
               {t.viewDashboard}
             </a>
+          </div>
+        ) : (
+          <div className="mt-6 sm:mt-8 p-5 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-600 min-h-[160px]">
+            <span className="text-3xl">📲</span>
+            <p className="text-sm">{t.addressPlaceholder} → QR</p>
           </div>
         )}
       </main>
