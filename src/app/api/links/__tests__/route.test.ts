@@ -118,3 +118,92 @@ describe('Property 10: Long memo is truncated to 200 chars', () => {
     )
   })
 })
+
+// Feature: tampered-link-blocking, Property 1: API tampered field is the logical inverse of verified
+// Validates: Requirements 3.1, 3.2, 3.3
+describe('Property 1: API tampered field is the logical inverse of verified', () => {
+  it('tampered === !verified for correctly signed, tampered, and unsigned links', async () => {
+    // Import modules inside the test to use the mocked rate-limiter
+    const { GET } = await import('../[id]/route')
+    const { encodePaymentLink } = await import('@/lib/encode')
+    const { signPaymentLink } = await import('@/lib/hmac')
+    const { NextRequest } = await import('next/server')
+
+    // Arbitrary for valid Ethereum addresses (0x + 40 hex chars)
+    const hexChar = fc.constantFrom(...'0123456789abcdef'.split(''))
+    const arbAddress = fc.array(hexChar, { minLength: 40, maxLength: 40 }).map(
+      (chars) => `0x${chars.join('')}`
+    )
+
+    // Arbitrary for supported tokens
+    const arbToken = fc.constantFrom('ETH', 'USDC')
+
+    // Arbitrary for valid amounts (empty string or positive number as string)
+    const arbAmount = fc.oneof(
+      fc.constant(''),
+      fc.double({ min: 0.01, max: 1_000_000, noNaN: true, noDefaultInfinity: true })
+        .filter((n) => n > 0)
+        .map((n) => n.toString())
+    )
+
+    // Arbitrary for memo (0-200 chars)
+    const arbMemo = fc.string({ minLength: 0, maxLength: 200 })
+
+    // Arbitrary for signature strategy: 'valid' | 'tampered' | 'omitted'
+    const arbSignatureStrategy = fc.constantFrom('valid', 'tampered', 'omitted')
+
+    await fc.assert(
+      fc.asyncProperty(
+        arbAddress,
+        arbToken,
+        arbAmount,
+        arbMemo,
+        arbSignatureStrategy,
+        async (address, token, amount, memo, strategy) => {
+          const baseData = {
+            address,
+            token,
+            amount,
+            memo,
+            chainId: 84532 as const,
+          }
+
+          let dataToEncode: typeof baseData & { signature?: string }
+
+          if (strategy === 'valid') {
+            // Sign correctly
+            const signature = signPaymentLink(baseData)
+            dataToEncode = { ...baseData, signature }
+          } else if (strategy === 'tampered') {
+            // Sign then corrupt the signature
+            const signature = signPaymentLink(baseData)
+            const corrupted = signature.slice(0, -4) + 'dead'
+            dataToEncode = { ...baseData, signature: corrupted }
+          } else {
+            // Omit signature entirely
+            dataToEncode = { ...baseData }
+          }
+
+          const id = encodePaymentLink(dataToEncode)
+          const req = new NextRequest(`http://localhost:3000/api/links/${id}`)
+          const res = await GET(req, { params: Promise.resolve({ id }) })
+          const json = await res.json()
+
+          // The core property: tampered is always the logical inverse of verified
+          expect(json.tampered).toBe(!json.verified)
+
+          // Additional: valid strategy should yield verified=true, tampered=false
+          if (strategy === 'valid') {
+            expect(json.verified).toBe(true)
+            expect(json.tampered).toBe(false)
+          } else {
+            // tampered or omitted should yield verified=false, tampered=true
+            expect(json.verified).toBe(false)
+            expect(json.tampered).toBe(true)
+          }
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+})
