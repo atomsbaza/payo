@@ -15,6 +15,7 @@ import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { SuccessView } from '@/components/SuccessView'
 import { Navbar } from '@/components/Navbar'
 import Skeleton from '@/components/Skeleton'
+import { BlockedScreen } from '@/components/BlockedScreen'
 import { useLang } from '@/context/LangContext'
 
 type Props = {
@@ -30,6 +31,7 @@ export default function PayPage({ params }: Props) {
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
   const [hmacVerified, setHmacVerified] = useState<boolean | null>(null)
+  const [tampered, setTampered] = useState<boolean | null>(null)
 
   const data = decodePaymentLink(id)
 
@@ -47,8 +49,14 @@ export default function PayPage({ params }: Props) {
     if (!id || !isValidData) return
     fetch(`/api/links/${id}`)
       .then((r) => r.json())
-      .then((res) => setHmacVerified(res.verified ?? false))
-      .catch(() => setHmacVerified(false))
+      .then((res) => {
+        setHmacVerified(res.verified ?? false)
+        setTampered(res.tampered ?? true)
+      })
+      .catch(() => {
+        setHmacVerified(false)
+        setTampered(true)
+      })
   }, [id, isValidData])
 
   // Token balance
@@ -259,6 +267,8 @@ export default function PayPage({ params }: Props) {
               </div>
             </div>
           </div>
+        ) : tampered === true ? (
+          <BlockedScreen />
         ) : (
         <>
         {/* Payment card */}
@@ -368,13 +378,6 @@ export default function PayPage({ params }: Props) {
               {balanceFormatted} {data.token}
               {isInsufficient && <span className="ml-2 text-xs">⚠️ {t.insufficientBalance}</span>}
             </span>
-          </div>
-        )}
-
-        {/* HMAC tampered warning */}
-        {hmacVerified === false && (
-          <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
-            <p className="text-amber-400">⚠️ This link may have been tampered with. Proceed with caution.</p>
           </div>
         )}
 

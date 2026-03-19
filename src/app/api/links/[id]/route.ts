@@ -24,5 +24,5 @@ export async function GET(
   // Verify HMAC signature
   const hmacValid = verifyPaymentLink(data)
 
-  return NextResponse.json({ id, data, verified: hmacValid })
+  return NextResponse.json({ id, data, verified: hmacValid, tampered: !hmacValid })
 }

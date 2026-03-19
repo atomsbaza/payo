@@ -62,7 +62,7 @@ vi.mock('wagmi', () => ({
 beforeEach(() => {
   mockFeeRate = 100n
   global.fetch = vi.fn().mockResolvedValue({
-    json: () => Promise.resolve({ verified: true }),
+    json: () => Promise.resolve({ verified: true, tampered: false }),
   })
 })
 

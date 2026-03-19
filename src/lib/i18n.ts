@@ -86,6 +86,7 @@ export const translations = {
     // QRDisplay
     copyLink: 'Copy',
     copiedLink: 'Copied!',
+    createToShare: 'กดสร้างลิงก์เพื่อแชร์',
 
     // Landing Page
     heroTitle: 'PromptPay สำหรับ Crypto',
@@ -117,6 +118,12 @@ export const translations = {
     // Navbar
     navHome: 'หน้าหลัก',
     navFees: 'ค่าธรรมเนียม',
+
+    // Blocked Screen
+    tamperedTitle: 'ลิงก์นี้ถูกดัดแปลง',
+    tamperedDesc: 'ไม่สามารถชำระเงินผ่านลิงก์นี้ได้เนื่องจากข้อมูลอาจถูกเปลี่ยนแปลง กรุณาขอ link ใหม่จากผู้รับเงิน',
+    tamperedGoHome: 'กลับหน้าหลัก',
+    tamperedRequestNew: 'กรุณาขอ link ใหม่จากผู้รับเงิน',
   },
 
   en: {
@@ -206,6 +213,7 @@ export const translations = {
     // QRDisplay
     copyLink: 'Copy',
     copiedLink: 'Copied!',
+    createToShare: 'Create link to share',
 
     // Landing Page
     heroTitle: 'PromptPay for Crypto',
@@ -237,6 +245,12 @@ export const translations = {
     // Navbar
     navHome: 'Home',
     navFees: 'Fees',
+
+    // Blocked Screen
+    tamperedTitle: 'This link has been tampered with',
+    tamperedDesc: 'Payment cannot be processed through this link because the data may have been altered. Please request a new link from the recipient.',
+    tamperedGoHome: 'Go to Homepage',
+    tamperedRequestNew: 'Please request a new link from the recipient',
   },
 }
 
