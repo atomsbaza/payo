@@ -28,6 +28,7 @@ export default function CreatePage() {
   const [expiryDays, setExpiryDays] = useState('0')
   const [saved, setSaved] = useState(false)
   const [savedUrl, setSavedUrl] = useState('')
+  const [createError, setCreateError] = useState('')
 
   // Dynamic QR — recomputes live as form changes (unsigned preview)
   const liveUrl = useMemo(() => {
@@ -54,6 +55,7 @@ export default function CreatePage() {
   async function handleSave() {
     const target = recipientAddress.trim()
     if (!target || target.length < 10) return
+    setCreateError('')
 
     try {
       const expiresAt = expiryDays !== '0'
@@ -73,7 +75,11 @@ export default function CreatePage() {
         }),
       })
 
-      if (!res.ok) return
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Request failed' }))
+        setCreateError(err.error || `Error ${res.status}`)
+        return
+      }
 
       const { url } = await res.json()
       setSavedUrl(url)
@@ -84,7 +90,7 @@ export default function CreatePage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
-      // silently fail
+      setCreateError('Network error — please try again')
     }
   }
 
@@ -204,7 +210,7 @@ export default function CreatePage() {
             <h2 className="text-base sm:text-lg font-semibold mb-4 text-center">
               {t.linkReady}
             </h2>
-            <QRDisplay url={savedUrl || liveUrl} />
+            <QRDisplay url={savedUrl || liveUrl} disableCopy={!savedUrl} />
 
             <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-3 text-sm">
               <div>

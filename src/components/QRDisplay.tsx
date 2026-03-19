@@ -6,9 +6,10 @@ import { useLang } from '@/context/LangContext'
 
 type Props = {
   url: string
+  disableCopy?: boolean
 }
 
-export function QRDisplay({ url }: Props) {
+export function QRDisplay({ url, disableCopy }: Props) {
   const [copied, setCopied] = useState(false)
   const { t } = useLang()
 
@@ -26,10 +27,13 @@ export function QRDisplay({ url }: Props) {
 
       <div className="w-full">
         <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-          <span className="flex-1 text-xs text-gray-400 truncate">{url}</span>
+          <span className="flex-1 text-xs text-gray-400 truncate">
+            {disableCopy ? t.createToShare ?? 'Create link to share' : url}
+          </span>
           <button
             onClick={handleCopy}
-            className="shrink-0 text-xs px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+            disabled={disableCopy}
+            className="shrink-0 text-xs px-3 py-1 bg-indigo-500 hover:bg-indigo-600 disabled:bg-white/10 disabled:text-gray-500 text-white rounded-lg transition-colors"
           >
             {copied ? t.copiedLink : t.copyLink}
           </button>
