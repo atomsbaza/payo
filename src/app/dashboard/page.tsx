@@ -3,40 +3,29 @@
 import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { formatEther } from 'viem'
+import { formatEther, formatUnits } from 'viem'
 import { shortAddress } from '@/lib/encode'
+import { getValidatedLinks, type SavedLink } from '@/lib/validate-storage'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
+import { Navbar } from '@/components/Navbar'
+import Skeleton from '@/components/Skeleton'
 import { useLang } from '@/context/LangContext'
-
-type SavedLink = {
-  url: string
-  address: string
-  token: string
-  amount: string
-  memo: string
-  createdAt: number
-}
-
-type BasescanTx = {
-  hash: string
-  from: string
-  value: string
-  timeStamp: string
-  isError: string
-}
+import { aggregateTotals } from './aggregation'
+import type { UnifiedTx } from '@/app/api/tx/[address]/route'
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
-  const { t, lang, toggleLang } = useLang()
+  const { t, lang } = useLang()
   const [myLinks, setMyLinks] = useState<SavedLink[]>([])
+  const [linksLoading, setLinksLoading] = useState(true)
   const [copiedUrl, setCopiedUrl] = useState('')
-  const [txHistory, setTxHistory] = useState<BasescanTx[]>([])
+  const [txHistory, setTxHistory] = useState<UnifiedTx[]>([])
   const [txLoading, setTxLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'links' | 'history'>('links')
 
   useEffect(() => {
-    const stored = localStorage.getItem('myLinks')
-    if (stored) setMyLinks(JSON.parse(stored))
+    setMyLinks(getValidatedLinks())
+    setLinksLoading(false)
   }, [])
 
   useEffect(() => {
@@ -79,32 +68,27 @@ export default function DashboardPage() {
     }
   }
 
+  function formatTxValue(tx: UnifiedTx) {
+    try {
+      if (tx.tokenSymbol && tx.tokenDecimal) {
+        const val = parseFloat(formatUnits(BigInt(tx.value), parseInt(tx.tokenDecimal)))
+        return val.toFixed(val < 0.001 ? 6 : 4)
+      }
+      return formatEthValue(tx.value)
+    } catch {
+      return '0'
+    }
+  }
+
+  function getTxTokenSymbol(tx: UnifiedTx) {
+    return tx.tokenSymbol ?? 'ETH'
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {isConnected && <WrongNetworkBanner />}
 
-      {/* Navbar */}
-      <nav className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xl font-bold text-indigo-400">⚡</span>
-          <span className="font-bold text-base sm:text-lg">Crypto Pay Link</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <button
-            onClick={toggleLang}
-            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
-          >
-            {lang === 'th' ? 'EN' : 'TH'}
-          </button>
-          <a
-            href="/create"
-            className="text-xs sm:text-sm px-3 py-1.5 sm:px-0 sm:py-0 bg-indigo-600 sm:bg-transparent hover:bg-indigo-500 sm:hover:bg-transparent text-white sm:text-gray-400 sm:hover:text-white rounded-lg sm:rounded-none font-medium transition-colors"
-          >
-            {t.navCreateLink}
-          </a>
-          <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
@@ -129,7 +113,7 @@ export default function DashboardPage() {
                 <p className="text-xs sm:text-sm text-gray-400">{t.statsLinks}</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
-                <p className="text-xl sm:text-2xl font-bold text-green-400">{txHistory.length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-400">{txHistory.filter(tx => tx.direction === 'in').length}</p>
                 <p className="text-xs sm:text-sm text-gray-400">{t.statsTx}</p>
               </div>
               <div className="col-span-2 sm:col-span-1 bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
@@ -172,7 +156,29 @@ export default function DashboardPage() {
             {/* Tab: Payment Links */}
             {activeTab === 'links' && (
               <div className="space-y-3">
-                {myLinks.length === 0 ? (
+                {linksLoading ? (
+                  <div data-testid="links-skeleton">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 mb-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Skeleton className="h-4 w-24" />
+                              <Skeleton className="h-5 w-14 rounded-full" />
+                            </div>
+                            <Skeleton className="h-3 w-40 mb-1" />
+                            <Skeleton className="h-3 w-32" />
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <Skeleton className="h-7 w-14 rounded-lg" />
+                            <Skeleton className="h-7 w-14 rounded-lg" />
+                            <Skeleton className="h-7 w-14 rounded-lg" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : myLinks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <span className="text-4xl mb-3">📭</span>
                     <p className="text-gray-400 mb-4 text-sm">{t.emptyLinks}</p>
@@ -242,9 +248,24 @@ export default function DashboardPage() {
             {activeTab === 'history' && (
               <div className="space-y-3">
                 {txLoading ? (
-                  <div className="flex items-center justify-center py-12 gap-3 text-gray-400">
-                    <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">{t.txLoading}</span>
+                  <div className="space-y-3" data-testid="tx-skeleton">
+                    {/* Summary card skeleton */}
+                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2">
+                      <Skeleton className="h-3 w-24 mb-2" />
+                      <Skeleton className="h-8 w-40" />
+                    </div>
+                    {/* 3 tx row skeletons */}
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <Skeleton className="h-5 w-28 mb-2" />
+                            <Skeleton className="h-3 w-40" />
+                          </div>
+                          <Skeleton className="h-8 w-8 rounded-lg" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : txHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -254,15 +275,22 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2">
-                      <p className="text-xs text-indigo-400 mb-1">{t.totalReceived}</p>
-                      <p className="text-2xl font-bold">
-                        {txHistory
-                          .reduce((sum, tx) => sum + parseFloat(formatEthValue(tx.value)), 0)
-                          .toFixed(4)}{' '}
-                        <span className="text-base text-gray-400">ETH</span>
-                      </p>
-                    </div>
+                    {(() => {
+                      const totals = aggregateTotals(txHistory)
+                      return Object.entries(totals).map(([token, rawTotal]) => {
+                        const decimals = token === 'ETH' ? 18 : (txHistory.find(tx => tx.tokenSymbol === token)?.tokenDecimal ? parseInt(txHistory.find(tx => tx.tokenSymbol === token)!.tokenDecimal!) : 18)
+                        const formatted = parseFloat(formatUnits(rawTotal, decimals)).toFixed(4)
+                        return (
+                          <div key={token} className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2">
+                            <p className="text-xs text-indigo-400 mb-1">{t.totalReceivedToken(token)}</p>
+                            <p className="text-2xl font-bold">
+                              {formatted}{' '}
+                              <span className="text-base text-gray-400">{token}</span>
+                            </p>
+                          </div>
+                        )
+                      })
+                    })()}
 
                     {txHistory.map((tx) => (
                       <div
@@ -271,11 +299,19 @@ export default function DashboardPage() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <span className="text-green-400 text-xs font-semibold bg-green-400/10 px-2 py-0.5 rounded-full">
-                              + {formatEthValue(tx.value)} ETH
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              tx.direction === 'out'
+                                ? 'text-red-400 bg-red-400/10'
+                                : 'text-green-400 bg-green-400/10'
+                            }`}>
+                              {tx.direction === 'out' ? '−' : '+'} {formatTxValue(tx)} {getTxTokenSymbol(tx)}
                             </span>
                             <p className="text-xs text-gray-500 mt-1.5">
-                              {t.txFrom(shortAddress(tx.from), formatDate(tx.timeStamp))}
+                              {tx.direction === 'out'
+                                ? t.txTo
+                                  ? t.txTo(shortAddress(tx.to ?? ''), formatDate(tx.timeStamp))
+                                  : `To ${shortAddress(tx.to ?? '')} • ${formatDate(tx.timeStamp)}`
+                                : t.txFrom(shortAddress(tx.from), formatDate(tx.timeStamp))}
                             </p>
                           </div>
                           <a

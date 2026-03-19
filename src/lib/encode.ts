@@ -5,6 +5,7 @@ export type PaymentLinkData = {
   memo: string        // optional note
   chainId: number
   expiresAt?: number  // optional unix timestamp (ms), undefined = no expiry
+  signature?: string  // HMAC-SHA256 hex string (added by server)
 }
 
 export function encodePaymentLink(data: PaymentLinkData): string {

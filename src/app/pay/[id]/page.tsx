@@ -1,13 +1,20 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useMemo, useState } from 'react'
 import { useAccount, useBalance, useReadContract, useSendTransaction, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { parseEther, parseUnits, formatUnits } from 'viem'
 import confetti from 'canvas-confetti'
 import { decodePaymentLink, isLinkExpired, shortAddress } from '@/lib/encode'
+import { validatePaymentLink } from '@/lib/validate'
+import { isSelfPayment } from '@/lib/self-payment'
 import { getToken, ERC20_ABI } from '@/lib/tokens'
+import { calculateFee, formatFeePercent } from '@/lib/fee'
+import { CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
+import { SuccessView } from '@/components/SuccessView'
+import { Navbar } from '@/components/Navbar'
+import Skeleton from '@/components/Skeleton'
 import { useLang } from '@/context/LangContext'
 
 type Props = {
@@ -17,14 +24,32 @@ type Props = {
 export default function PayPage({ params }: Props) {
   const { id } = use(params)
   const { address, isConnected } = useAccount()
-  const { t, lang, toggleLang } = useLang()
+  const { t, lang } = useLang()
   const [customAmount, setCustomAmount] = useState('')
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  const [hmacVerified, setHmacVerified] = useState<boolean | null>(null)
 
   const data = decodePaymentLink(id)
+
+  // Validate payment link data
+  const validation = data ? validatePaymentLink(data) : null
+  const isValidData = validation?.valid === true
+
   const token = data ? getToken(data.token) : undefined
+
+  // Self-payment check
+  const selfPayment = data ? isSelfPayment(address, data.address) : false
+
+  // HMAC verification via API
+  useEffect(() => {
+    if (!id || !isValidData) return
+    fetch(`/api/links/${id}`)
+      .then((r) => r.json())
+      .then((res) => setHmacVerified(res.verified ?? false))
+      .catch(() => setHmacVerified(false))
+  }, [id, isValidData])
 
   // Token balance
   const { data: ethBalance } = useBalance({
@@ -44,9 +69,39 @@ export default function PayPage({ params }: Props) {
     ? parseFloat(formatUnits(balanceRaw, token.decimals)).toFixed(token.decimals === 18 ? 4 : 2)
     : null
 
-  const { sendTransactionAsync, isPending: isEthPending } = useSendTransaction()
-  const { writeContractAsync, isPending: isErc20Pending } = useWriteContract()
+  // Whether the fee contract is deployed and configured
+  const contractReady = !!CRYPTO_PAY_LINK_ADDRESS
+
+  // Read fee rate from the deployed contract; fall back to DEFAULT_FEE_RATE on error
+  const { data: contractFeeRate, isError: feeRateError } = useReadContract({
+    address: CRYPTO_PAY_LINK_ADDRESS,
+    abi: CryptoPayLinkFeeABI,
+    functionName: 'feeRate',
+    query: { enabled: contractReady },
+  })
+  const feeRate = contractReady && contractFeeRate !== undefined ? (contractFeeRate as bigint) : DEFAULT_FEE_RATE
+
+  const { writeContractAsync, isPending: isContractPending } = useWriteContract()
+  const { sendTransactionAsync, isPending: isDirectPending } = useSendTransaction()
+  const isPending = isContractPending || isDirectPending
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+
+  const effectiveAmount = data?.amount || customAmount
+
+  // Compute fee breakdown whenever effectiveAmount changes
+  const feeBreakdown = useMemo(() => {
+    if (!effectiveAmount || !token) return null
+    try {
+      const totalWei = token.address === 'native'
+        ? parseEther(effectiveAmount)
+        : parseUnits(effectiveAmount, token.decimals)
+      if (totalWei <= 0n) return null
+      const { fee, net } = calculateFee(totalWei, feeRate)
+      return { total: totalWei, fee, net, feeRate }
+    } catch {
+      return null
+    }
+  }, [effectiveAmount, token, feeRate])
 
   // Confetti on success 🎉
   useEffect(() => {
@@ -61,14 +116,15 @@ export default function PayPage({ params }: Props) {
     frame()
   }, [isSuccess])
 
-  // Invalid link
-  if (!data) {
+  // Invalid link or validation failure
+  if (!data || !isValidData) {
+    const reason = validation && !validation.valid ? validation.reason : undefined
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-6xl mb-4">❌</p>
           <h1 className="text-xl font-bold mb-2">{t.invalidLink}</h1>
-          <p className="text-gray-400">{t.invalidLinkDesc}</p>
+          <p className="text-gray-400">{reason || t.invalidLinkDesc}</p>
         </div>
       </div>
     )
@@ -88,9 +144,6 @@ export default function PayPage({ params }: Props) {
     )
   }
 
-  const effectiveAmount = data.amount || customAmount
-  const isPending = isEthPending || isErc20Pending
-
   // Check insufficient balance
   const isInsufficient = balanceRaw !== undefined && effectiveAmount
     ? balanceRaw < (token?.address === 'native'
@@ -99,23 +152,51 @@ export default function PayPage({ params }: Props) {
     : false
 
   async function handlePay() {
-    if (!effectiveAmount || !token) return
+    if (!effectiveAmount || !token || !data) return
     setError('')
     try {
       let hash: `0x${string}`
-      if (token.address === 'native') {
-        hash = await sendTransactionAsync({
-          to: data!.address as `0x${string}`,
-          value: parseEther(effectiveAmount),
-        })
+
+      if (contractReady) {
+        // Use the fee contract
+        if (token.address === 'native') {
+          hash = await writeContractAsync({
+            address: CRYPTO_PAY_LINK_ADDRESS,
+            abi: CryptoPayLinkFeeABI,
+            functionName: 'payNative',
+            args: [data.address as `0x${string}`, data.memo || ''],
+            value: parseEther(effectiveAmount),
+          })
+        } else {
+          hash = await writeContractAsync({
+            address: CRYPTO_PAY_LINK_ADDRESS,
+            abi: CryptoPayLinkFeeABI,
+            functionName: 'payToken',
+            args: [
+              data.address as `0x${string}`,
+              token.address as `0x${string}`,
+              parseUnits(effectiveAmount, token.decimals),
+              data.memo || '',
+            ],
+          })
+        }
       } else {
-        hash = await writeContractAsync({
-          address: token.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'transfer',
-          args: [data!.address as `0x${string}`, parseUnits(effectiveAmount, token.decimals)],
-        })
+        // Fallback: direct transfer (no fee contract deployed)
+        if (token.address === 'native') {
+          hash = await sendTransactionAsync({
+            to: data.address as `0x${string}`,
+            value: parseEther(effectiveAmount),
+          })
+        } else {
+          hash = await writeContractAsync({
+            address: token.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'transfer',
+            args: [data.address as `0x${string}`, parseUnits(effectiveAmount, token.decimals)],
+          })
+        }
       }
+
       setTxHash(hash)
     } catch (err: unknown) {
       setRetryCount(c => c + 1)
@@ -135,24 +216,12 @@ export default function PayPage({ params }: Props) {
 
   if (isSuccess && txHash) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-6">
-        <div className="text-center max-w-sm w-full">
-          <div className="text-7xl mb-4">🎉</div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t.paySuccess}</h1>
-          <p className="text-gray-400 mb-2">
-            {t.paySuccessDesc(effectiveAmount, data.token)}
-          </p>
-          <p className="text-xs text-gray-600 mb-6 font-mono">{shortAddress(data.address)}</p>
-          <a
-            href={`https://sepolia.basescan.org/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl text-sm transition-colors"
-          >
-            {t.viewOnBasescan}
-          </a>
-        </div>
-      </div>
+      <SuccessView
+        amount={effectiveAmount}
+        token={data.token}
+        recipientAddress={data.address}
+        txHash={txHash}
+      />
     )
   }
 
@@ -160,24 +229,38 @@ export default function PayPage({ params }: Props) {
     <div className="min-h-screen bg-gray-950 text-white">
       {isConnected && <WrongNetworkBanner />}
 
-      {/* Navbar */}
-      <nav className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xl font-bold text-indigo-400">⚡</span>
-          <span className="font-bold text-base sm:text-lg">Crypto Pay Link</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={toggleLang}
-            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
-          >
-            {lang === 'th' ? 'EN' : 'TH'}
-          </button>
-          <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="max-w-sm mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {hmacVerified === null ? (
+          /* Skeleton payment card */
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 mb-4 sm:mb-6" data-testid="pay-skeleton">
+            <div className="text-center mb-5">
+              <Skeleton className="w-14 h-14 sm:w-16 sm:h-16 rounded-full mx-auto mb-3" />
+              <Skeleton className="h-5 w-48 mx-auto mb-2" />
+              <Skeleton className="h-4 w-32 mx-auto" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Payment card */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 mb-4 sm:mb-6">
           <div className="text-center mb-5">
@@ -216,6 +299,40 @@ export default function PayPage({ params }: Props) {
               </div>
             )}
           </div>
+
+          {/* Fee breakdown */}
+          {feeBreakdown && token && contractReady && (
+            <div className="mt-4 pt-4 border-t border-white/10 space-y-2 text-sm">
+              {feeRateError && (
+                <p className="text-amber-400 text-xs mb-2">⚠️ Could not read fee rate from contract, using default</p>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-500">Fee rate</span>
+                <span className="text-gray-300">{formatFeePercent(feeRate)}</span>
+              </div>
+              {feeBreakdown.fee === 0n ? (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Fee</span>
+                  <span className="text-green-400">No fee</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Total</span>
+                    <span className="text-gray-200">{formatUnits(feeBreakdown.total, token.decimals)} {data.token}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Fee</span>
+                    <span className="text-amber-400">-{formatUnits(feeBreakdown.fee, token.decimals)} {data.token}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Recipient gets</span>
+                    <span className="text-green-400">{formatUnits(feeBreakdown.net, token.decimals)} {data.token}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Custom amount if not fixed */}
@@ -254,6 +371,20 @@ export default function PayPage({ params }: Props) {
           </div>
         )}
 
+        {/* HMAC tampered warning */}
+        {hmacVerified === false && (
+          <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
+            <p className="text-amber-400">⚠️ This link may have been tampered with. Proceed with caution.</p>
+          </div>
+        )}
+
+        {/* Self-payment warning */}
+        {selfPayment && (
+          <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
+            <p className="text-amber-400">⚠️ You are about to pay yourself. This transaction would waste gas fees.</p>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm">
@@ -278,7 +409,7 @@ export default function PayPage({ params }: Props) {
         ) : (
           <button
             onClick={handlePay}
-            disabled={!effectiveAmount || isPending || isConfirming || isInsufficient}
+            disabled={!effectiveAmount || isPending || isConfirming || isInsufficient || selfPayment}
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors text-sm sm:text-base"
           >
             {isConfirming
@@ -287,6 +418,8 @@ export default function PayPage({ params }: Props) {
               ? t.waitingWallet
               : t.payBtn(effectiveAmount || '?', data.token)}
           </button>
+        )}
+        </>
         )}
       </main>
     </div>

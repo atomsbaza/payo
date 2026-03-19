@@ -76,6 +76,7 @@ export const translations = {
     emptyTxDesc: 'transactions จาก Base Sepolia จะแสดงที่นี่',
     totalReceived: 'Total ETH received',
     txFrom: (from: string, date: string) => `จาก ${from} • ${date}`,
+    txTo: (to: string, date: string) => `ถึง ${to} • ${date}`,
 
     // WrongNetworkBanner
     wrongNetwork: 'กรุณาเปลี่ยน network เป็น Base Sepolia',
@@ -85,6 +86,37 @@ export const translations = {
     // QRDisplay
     copyLink: 'Copy',
     copiedLink: 'Copied!',
+
+    // Landing Page
+    heroTitle: 'PromptPay สำหรับ Crypto',
+    heroSubtitle: 'สร้าง link รับเงิน crypto ง่ายๆ — แชร์ให้ใครก็ได้ โอนข้าม wallet ได้ทันที',
+    heroCta: 'สร้าง Payment Link',
+    howItWorksTitle: 'วิธีใช้งาน',
+    step1Title: 'สร้าง Link',
+    step1Desc: 'ระบุ wallet address, token, จำนวนเงิน แล้วสร้าง payment link',
+    step2Title: 'แชร์ Link',
+    step2Desc: 'ส่ง link หรือ QR code ให้ผู้โอนผ่าน chat หรือ social media',
+    step3Title: 'รับเงิน',
+    step3Desc: 'ผู้โอนกดจ่ายผ่าน link — เงินเข้า wallet คุณโดยตรง',
+    valuePropsTitle: 'ทำไมต้อง Crypto Pay Link?',
+    valueProp1: 'Trustless — ไม่ต้องเชื่อใจตัวกลาง เงินโอนตรงถึง wallet',
+    valueProp2: 'Low Cost — ค่า gas ต่ำบน Base network',
+    valueProp3: 'Cross-Wallet — ใช้ได้กับทุก wallet ที่รองรับ EVM',
+
+    // Success Page Actions
+    successCreateNew: 'สร้าง Payment Link ใหม่',
+    successGoHome: 'กลับหน้าหลัก',
+    successShare: 'แชร์ Receipt',
+    successTxHash: 'TX Hash',
+    successRecipient: 'ผู้รับ',
+    successShareText: (amount: string, token: string, hash: string) => `ฉันโอน ${amount} ${token} สำเร็จแล้ว! TX: ${hash}`,
+
+    // Dashboard ERC-20
+    totalReceivedToken: (token: string) => `Total ${token} received`,
+
+    // Navbar
+    navHome: 'หน้าหลัก',
+    navFees: 'ค่าธรรมเนียม',
   },
 
   en: {
@@ -164,6 +196,7 @@ export const translations = {
     emptyTxDesc: 'Transactions from Base Sepolia will appear here',
     totalReceived: 'Total ETH received',
     txFrom: (from: string, date: string) => `From ${from} • ${date}`,
+    txTo: (to: string, date: string) => `To ${to} • ${date}`,
 
     // WrongNetworkBanner
     wrongNetwork: 'Please switch network to Base Sepolia',
@@ -173,6 +206,37 @@ export const translations = {
     // QRDisplay
     copyLink: 'Copy',
     copiedLink: 'Copied!',
+
+    // Landing Page
+    heroTitle: 'PromptPay for Crypto',
+    heroSubtitle: 'Create a payment link to receive crypto — share with anyone, instant cross-wallet transfers',
+    heroCta: 'Create Payment Link',
+    howItWorksTitle: 'How It Works',
+    step1Title: 'Create a Link',
+    step1Desc: 'Enter your wallet address, choose a token and amount, then generate a payment link',
+    step2Title: 'Share the Link',
+    step2Desc: 'Send the link or QR code to the payer via chat or social media',
+    step3Title: 'Get Paid',
+    step3Desc: 'The payer clicks the link and pays — funds go directly to your wallet',
+    valuePropsTitle: 'Why Crypto Pay Link?',
+    valueProp1: 'Trustless — No middleman, funds go straight to your wallet',
+    valueProp2: 'Low Cost — Minimal gas fees on Base network',
+    valueProp3: 'Cross-Wallet — Works with any EVM-compatible wallet',
+
+    // Success Page Actions
+    successCreateNew: 'Create New Payment Link',
+    successGoHome: 'Go Home',
+    successShare: 'Share Receipt',
+    successTxHash: 'TX Hash',
+    successRecipient: 'Recipient',
+    successShareText: (amount: string, token: string, hash: string) => `I just sent ${amount} ${token} successfully! TX: ${hash}`,
+
+    // Dashboard ERC-20
+    totalReceivedToken: (token: string) => `Total ${token} received`,
+
+    // Navbar
+    navHome: 'Home',
+    navFees: 'Fees',
   },
 }
 

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { decodePaymentLink } from '@/lib/encode'
+import { validatePaymentLink } from '@/lib/validate'
+import { verifyPaymentLink } from '@/lib/hmac'
 
-// GET /api/links/[id] — decode a payment link
+// GET /api/links/[id] — decode and verify a payment link
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -13,5 +15,14 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid or expired link' }, { status: 404 })
   }
 
-  return NextResponse.json({ id, data })
+  // Validate payment link data
+  const validation = validatePaymentLink(data)
+  if (!validation.valid) {
+    return NextResponse.json({ error: validation.reason }, { status: 400 })
+  }
+
+  // Verify HMAC signature
+  const hmacValid = verifyPaymentLink(data)
+
+  return NextResponse.json({ id, data, verified: hmacValid })
 }

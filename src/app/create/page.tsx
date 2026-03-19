@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { encodePaymentLink } from '@/lib/encode'
 import { TokenSelector } from '@/components/TokenSelector'
 import { QRDisplay } from '@/components/QRDisplay'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
+import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/context/LangContext'
 import { baseSepolia } from 'wagmi/chains'
 
@@ -19,7 +19,7 @@ const EXPIRY_OPTIONS = [
 
 export default function CreatePage() {
   const { address, isConnected } = useAccount()
-  const { t, lang, toggleLang } = useLang()
+  const { t, lang } = useLang()
 
   const [recipientAddress, setRecipientAddress] = useState('')
   const [token, setToken] = useState('ETH')
@@ -27,8 +27,9 @@ export default function CreatePage() {
   const [memo, setMemo] = useState('')
   const [expiryDays, setExpiryDays] = useState('0')
   const [saved, setSaved] = useState(false)
+  const [savedUrl, setSavedUrl] = useState('')
 
-  // Dynamic QR — recomputes live as form changes
+  // Dynamic QR — recomputes live as form changes (unsigned preview)
   const liveUrl = useMemo(() => {
     const target = recipientAddress.trim()
     if (!target || target.length < 10) return ''
@@ -50,14 +51,41 @@ export default function CreatePage() {
     if (address) setRecipientAddress(address)
   }
 
-  function handleSave() {
-    if (!liveUrl) return
+  async function handleSave() {
     const target = recipientAddress.trim()
-    const existing = JSON.parse(localStorage.getItem('myLinks') ?? '[]')
-    const newLink = { url: liveUrl, address: target, token, amount, memo, createdAt: Date.now() }
-    localStorage.setItem('myLinks', JSON.stringify([newLink, ...existing].slice(0, 50)))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    if (!target || target.length < 10) return
+
+    try {
+      const expiresAt = expiryDays !== '0'
+        ? Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000
+        : undefined
+
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: target,
+          token,
+          amount: amount.trim(),
+          memo: memo.trim(),
+          chainId: baseSepolia.id,
+          ...(expiresAt ? { expiresAt } : {}),
+        }),
+      })
+
+      if (!res.ok) return
+
+      const { url } = await res.json()
+      setSavedUrl(url)
+
+      const existing = JSON.parse(localStorage.getItem('myLinks') ?? '[]')
+      const newLink = { url, address: target, token, amount, memo, createdAt: Date.now() }
+      localStorage.setItem('myLinks', JSON.stringify([newLink, ...existing].slice(0, 50)))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      // silently fail
+    }
   }
 
   const expiryLabel = expiryDays !== '0'
@@ -68,28 +96,7 @@ export default function CreatePage() {
     <div className="min-h-screen bg-gray-950 text-white">
       {isConnected && <WrongNetworkBanner />}
 
-      {/* Navbar */}
-      <nav className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xl font-bold text-indigo-400">⚡</span>
-          <span className="font-bold text-base sm:text-lg">Crypto Pay Link</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <button
-            onClick={toggleLang}
-            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
-          >
-            {lang === 'th' ? 'EN' : 'TH'}
-          </button>
-          <a
-            href="/dashboard"
-            className="hidden sm:block text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            {t.navDashboard}
-          </a>
-          <ConnectButton showBalance={false} accountStatus="avatar" chainStatus="none" />
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="max-w-lg mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
@@ -197,7 +204,7 @@ export default function CreatePage() {
             <h2 className="text-base sm:text-lg font-semibold mb-4 text-center">
               {t.linkReady}
             </h2>
-            <QRDisplay url={liveUrl} />
+            <QRDisplay url={savedUrl || liveUrl} />
 
             <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-3 text-sm">
               <div>
