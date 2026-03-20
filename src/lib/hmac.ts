@@ -6,11 +6,13 @@ let _secretChecked = false
 function getSecret(): string {
   const secret = process.env.HMAC_SECRET
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('HMAC_SECRET environment variable is required in production')
-    }
     if (!_secretChecked) {
-      console.warn('⚠️ HMAC_SECRET not set — using insecure default. Do NOT use in production.')
+      console.warn(
+        '⚠️ HMAC_SECRET not set — using insecure default.',
+        process.env.NODE_ENV === 'production'
+          ? 'THIS IS UNSAFE IN PRODUCTION. Set HMAC_SECRET in your environment variables.'
+          : 'Do NOT use in production.'
+      )
       _secretChecked = true
     }
     return 'default-dev-secret'

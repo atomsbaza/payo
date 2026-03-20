@@ -16,7 +16,7 @@ export function middleware(_request: NextRequest) {
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
     "style-src 'self' 'unsafe-inline'; " +
-    "connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://api-sepolia.basescan.org; " +
+    "connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://api-sepolia.basescan.org https://*.web3modal.org https://*.web3modal.com; " +
     "img-src 'self' data: https: blob:; " +
     "font-src 'self' data:; " +
     "frame-src 'self' https://*.walletconnect.com;"
