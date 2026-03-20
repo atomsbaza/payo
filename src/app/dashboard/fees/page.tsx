@@ -18,7 +18,10 @@ export default function FeeDashboardPage() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    if (!COMPANY_WALLET) return
+    if (!COMPANY_WALLET) {
+      setLoading(false)
+      return
+    }
     fetch(`/api/fees/${COMPANY_WALLET}`)
       .then((r) => r.json())
       .then((data) => setTransactions(data.transactions ?? []))
@@ -108,9 +111,9 @@ export default function FeeDashboardPage() {
         ) : transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <span className="text-4xl mb-3">📊</span>
-            <p className="text-gray-400 text-sm">No fee transactions yet</p>
+            <p className="text-gray-400 text-sm">{t.feeNoTx}</p>
             <p className="text-gray-600 text-xs mt-1">
-              Fee transactions will appear here once payments are processed
+              {t.feeNoTxDesc}
             </p>
           </div>
         ) : (
@@ -129,7 +132,7 @@ export default function FeeDashboardPage() {
                   key={token}
                   className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2"
                 >
-                  <p className="text-xs text-indigo-400 mb-1">Total {token} fees collected</p>
+                  <p className="text-xs text-indigo-400 mb-1">{t.feeTotalCollected(token)}</p>
                   <p className="text-2xl font-bold">
                     {formatted} <span className="text-base text-gray-400">{token}</span>
                   </p>
@@ -140,7 +143,7 @@ export default function FeeDashboardPage() {
             {/* Transaction count */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-2">
               <p className="text-xl sm:text-2xl font-bold text-green-400">{count}</p>
-              <p className="text-xs sm:text-sm text-gray-400">Fee-bearing transactions</p>
+              <p className="text-xs sm:text-sm text-gray-400">{t.feeBearingTx}</p>
             </div>
 
             {/* Individual transactions */}
@@ -155,7 +158,7 @@ export default function FeeDashboardPage() {
                       + {formatFeeValue(tx)} {getTokenSymbol(tx)}
                     </span>
                     <p className="text-xs text-gray-500 mt-1.5">
-                      From {shortAddress(tx.payer)} • {formatDate(tx.timeStamp)}
+                      {t.feeFrom(shortAddress(tx.payer), formatDate(tx.timeStamp))}
                     </p>
                   </div>
                   <a
