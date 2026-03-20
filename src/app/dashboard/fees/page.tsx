@@ -12,7 +12,7 @@ import { aggregateFeeTotals } from './aggregation'
 import type { FeeTx } from '@/app/api/fees/[address]/route'
 
 export default function FeeDashboardPage() {
-  const { lang } = useLang()
+  const { t, lang } = useLang()
   const [transactions, setTransactions] = useState<FeeTx[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -64,9 +64,9 @@ export default function FeeDashboardPage() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1">Fee Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1">{t.feeDashTitle}</h1>
           <p className="text-sm text-gray-400">
-            Platform fee collection overview for {shortAddress(COMPANY_WALLET ?? '')}
+            {t.feeDashSubtitle(shortAddress(COMPANY_WALLET ?? ''))}
           </p>
         </div>
 
@@ -97,12 +97,12 @@ export default function FeeDashboardPage() {
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <span className="text-4xl mb-3">⚠️</span>
-            <p className="text-gray-400 text-sm">Failed to load fee data</p>
+            <p className="text-gray-400 text-sm">{t.feeLoadError}</p>
             <button
               onClick={() => window.location.reload()}
               className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-colors"
             >
-              Retry
+              {t.feeRetry}
             </button>
           </div>
         ) : transactions.length === 0 ? (

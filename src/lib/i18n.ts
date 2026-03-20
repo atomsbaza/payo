@@ -124,6 +124,17 @@ export const translations = {
     tamperedDesc: 'ไม่สามารถชำระเงินผ่านลิงก์นี้ได้เนื่องจากข้อมูลอาจถูกเปลี่ยนแปลง กรุณาขอ link ใหม่จากผู้รับเงิน',
     tamperedGoHome: 'กลับหน้าหลัก',
     tamperedRequestNew: 'กรุณาขอ link ใหม่จากผู้รับเงิน',
+
+    // Fee Dashboard
+    feeDashTitle: 'ค่าธรรมเนียม',
+    feeDashSubtitle: (address: string) => `ภาพรวมค่าธรรมเนียมของ ${address}`,
+    feeTotalCollected: (token: string) => `รวม ${token} ที่เก็บได้`,
+    feeBearingTx: 'ธุรกรรมที่มีค่าธรรมเนียม',
+    feeFrom: (from: string, date: string) => `จาก ${from} • ${date}`,
+    feeNoTx: 'ยังไม่มีธุรกรรมค่าธรรมเนียม',
+    feeNoTxDesc: 'ธุรกรรมค่าธรรมเนียมจะแสดงที่นี่เมื่อมีการชำระเงิน',
+    feeLoadError: 'ไม่สามารถโหลดข้อมูลค่าธรรมเนียมได้',
+    feeRetry: 'ลองใหม่',
   },
 
   en: {
@@ -251,6 +262,17 @@ export const translations = {
     tamperedDesc: 'Payment cannot be processed through this link because the data may have been altered. Please request a new link from the recipient.',
     tamperedGoHome: 'Go to Homepage',
     tamperedRequestNew: 'Please request a new link from the recipient',
+
+    // Fee Dashboard
+    feeDashTitle: 'Fee Dashboard',
+    feeDashSubtitle: (address: string) => `Platform fee collection overview for ${address}`,
+    feeTotalCollected: (token: string) => `Total ${token} fees collected`,
+    feeBearingTx: 'Fee-bearing transactions',
+    feeFrom: (from: string, date: string) => `From ${from} • ${date}`,
+    feeNoTx: 'No fee transactions yet',
+    feeNoTxDesc: 'Fee transactions will appear here once payments are processed',
+    feeLoadError: 'Failed to load fee data',
+    feeRetry: 'Retry',
   },
 }
 

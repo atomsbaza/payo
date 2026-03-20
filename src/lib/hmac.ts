@@ -1,7 +1,22 @@
 import crypto from 'crypto'
 import type { PaymentLinkData } from './encode'
 
-const SECRET = process.env.HMAC_SECRET ?? 'default-dev-secret'
+let _secretChecked = false
+
+function getSecret(): string {
+  const secret = process.env.HMAC_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('HMAC_SECRET environment variable is required in production')
+    }
+    if (!_secretChecked) {
+      console.warn('⚠️ HMAC_SECRET not set — using insecure default. Do NOT use in production.')
+      _secretChecked = true
+    }
+    return 'default-dev-secret'
+  }
+  return secret
+}
 
 /**
  * สร้าง HMAC-SHA256 signature จาก payment link data
@@ -15,7 +30,7 @@ export function signPaymentLink(data: Omit<PaymentLinkData, 'signature'>): strin
     chainId: data.chainId,
     expiresAt: data.expiresAt,
   })
-  return crypto.createHmac('sha256', SECRET).update(payload).digest('hex')
+  return crypto.createHmac('sha256', getSecret()).update(payload).digest('hex')
 }
 
 /**
