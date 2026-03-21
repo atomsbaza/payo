@@ -7,6 +7,7 @@ const SavedLinkSchema = z.object({
   amount: z.string(),
   memo: z.string(),
   createdAt: z.number(),
+  expiryDate: z.number().optional(),
 })
 
 export type SavedLink = z.infer<typeof SavedLinkSchema>

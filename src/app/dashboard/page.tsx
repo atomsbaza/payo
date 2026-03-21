@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatEther, formatUnits } from 'viem'
@@ -9,9 +9,27 @@ import { getValidatedLinks, type SavedLink } from '@/lib/validate-storage'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { Navbar } from '@/components/Navbar'
 import Skeleton from '@/components/Skeleton'
+import { QrLinkModal } from '@/components/QrLinkModal'
 import { useLang } from '@/context/LangContext'
-import { aggregateTotals } from './aggregation'
+import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
+import {
+  aggregateTotals,
+  filterTransactions,
+  getLinkStatus,
+  aggregateSentTotals,
+  aggregateByDay,
+  buildCsvContent,
+  matchTxToLink,
+} from './aggregation'
 import type { UnifiedTx } from '@/app/api/tx/[address]/route'
+
+/** 5.1 — Fiat value display component */
+function FiatLine({ token, formattedAmount }: { token: string; formattedAmount: string }) {
+  const price = useCoinGeckoPrice(token)
+  if (price === null) return null
+  const fiat = (parseFloat(formattedAmount) * price).toFixed(2)
+  return <p className="text-xs text-gray-500">≈ ${fiat}</p>
+}
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
@@ -22,6 +40,31 @@ export default function DashboardPage() {
   const [txHistory, setTxHistory] = useState<UnifiedTx[]>([])
   const [txLoading, setTxLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'links' | 'history'>('links')
+  const [qrLink, setQrLink] = useState<SavedLink | null>(null)
+
+  /** 5.2 — Filter state */
+  const [tokenFilter, setTokenFilter] = useState<string | null>(null)
+  const [dirFilter, setDirFilter] = useState<'in' | 'out' | null>(null)
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+
+  /** 5.2 — Derived filtered transactions */
+  const filteredTxs = useMemo(() => filterTransactions(txHistory, {
+    token: tokenFilter,
+    direction: dirFilter,
+    startDate: startDate ? Math.floor(new Date(startDate).getTime() / 1000) : null,
+    endDate: endDate ? Math.floor(new Date(endDate + 'T23:59:59').getTime() / 1000) : null,
+  }), [txHistory, tokenFilter, dirFilter, startDate, endDate])
+
+  /** 5.2 — Token dropdown options from actual data */
+  const tokenOptions = useMemo(() => {
+    const tokens = new Set(txHistory.map(tx => tx.tokenSymbol ?? 'ETH'))
+    return Array.from(tokens)
+  }, [txHistory])
+
+  /** 5.5 — Daily chart data */
+  const dailyData = useMemo(() => aggregateByDay(filteredTxs), [filteredTxs])
+  const maxTotal = dailyData.reduce((m, d) => d.total > m ? d.total : m, 0n)
 
   useEffect(() => {
     setMyLinks(getValidatedLinks())
@@ -84,6 +127,18 @@ export default function DashboardPage() {
     return tx.tokenSymbol ?? 'ETH'
   }
 
+  /** 5.6 — CSV export handler */
+  function handleExportCsv() {
+    const csv = buildCsvContent(filteredTxs)
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `payo-tx-${address}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {isConnected && <WrongNetworkBanner />}
@@ -113,7 +168,7 @@ export default function DashboardPage() {
                 <p className="text-xs sm:text-sm text-gray-400">{t.statsLinks}</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
-                <p className="text-xl sm:text-2xl font-bold text-green-400">{txHistory.filter(tx => tx.direction === 'in').length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-400">{filteredTxs.filter(tx => tx.direction === 'in').length}</p>
                 <p className="text-xs sm:text-sm text-gray-400">{t.statsTx}</p>
               </div>
               <div className="col-span-2 sm:col-span-1 bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
@@ -151,6 +206,15 @@ export default function DashboardPage() {
                   </span>
                 )}
               </button>
+              {/* 5.6 — Export CSV button (visible when history tab active and has txs) */}
+              {activeTab === 'history' && filteredTxs.length > 0 && (
+                <button
+                  onClick={handleExportCsv}
+                  className="ml-auto text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white rounded-lg transition-colors self-center"
+                >
+                  Export CSV
+                </button>
+              )}
             </div>
 
             {/* Tab: Payment Links */}
@@ -206,16 +270,50 @@ export default function DashboardPage() {
                             <span className="text-xs px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-full">
                               {link.token}
                             </span>
+                            {/* 5.4 — Link Status Badge */}
+                            {(() => {
+                              const status = getLinkStatus(link.expiryDate, Date.now())
+                              return (
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  status === 'active'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {status === 'active' ? 'Active' : 'Expired'}
+                                </span>
+                              )
+                            })()}
                           </div>
                           {link.memo && (
-                            <p className="text-xs text-gray-400 mb-1 truncate">"{link.memo}"</p>
+                            <p className="text-xs text-gray-400 mb-1 truncate">&ldquo;{link.memo}&rdquo;</p>
                           )}
                           <p className="text-xs text-gray-500">
                             {shortAddress(link.address)} •{' '}
                             {new Date(link.createdAt).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US')}
                           </p>
+                          {/* 5.7 — Matched TX indicator */}
+                          {(() => {
+                            const matched = matchTxToLink(link, txHistory)
+                            if (!matched) return null
+                            const amount = formatTxValue(matched)
+                            const meetsTarget = link.amount
+                              ? parseFloat(amount) >= parseFloat(link.amount)
+                              : true
+                            return (
+                              <span className={`text-xs ${meetsTarget ? 'text-green-400' : 'text-yellow-400'}`}>
+                                ได้รับเงินแล้ว ✓ {amount} {link.token}
+                              </span>
+                            )
+                          })()}
                         </div>
                         <div className="flex gap-1.5 sm:gap-2 shrink-0">
+                          <button
+                            onClick={() => setQrLink(link)}
+                            className="text-xs px-2.5 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+                            aria-label="Show QR code"
+                          >
+                            QR
+                          </button>
                           <button
                             onClick={() => handleCopy(link.url)}
                             className="text-xs px-2.5 sm:px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
@@ -275,8 +373,52 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
+                    {/* 5.2 — Filter controls */}
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                      <select
+                        value={tokenFilter ?? ''}
+                        onChange={(e) => setTokenFilter(e.target.value || null)}
+                        className="text-xs bg-gray-800 border border-white/10 rounded-lg px-2 py-1.5 text-white"
+                      >
+                        <option value="">All Tokens</option>
+                        {tokenOptions.map(tok => (
+                          <option key={tok} value={tok}>{tok}</option>
+                        ))}
+                      </select>
+                      <div className="flex gap-1">
+                        {(['all', 'in', 'out'] as const).map(dir => (
+                          <button
+                            key={dir}
+                            onClick={() => setDirFilter(dir === 'all' ? null : dir)}
+                            className={`text-xs px-2.5 py-1.5 rounded-lg transition-colors ${
+                              (dir === 'all' && dirFilter === null) || dirFilter === dir
+                                ? 'bg-indigo-500/30 text-indigo-400'
+                                : 'bg-white/5 text-gray-400 hover:text-white'
+                            }`}
+                          >
+                            {dir === 'all' ? 'All' : dir === 'in' ? 'Incoming' : 'Outgoing'}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="text-xs bg-gray-800 border border-white/10 rounded-lg px-2 py-1.5 text-white"
+                        placeholder="Start"
+                      />
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="text-xs bg-gray-800 border border-white/10 rounded-lg px-2 py-1.5 text-white"
+                        placeholder="End"
+                      />
+                    </div>
+
+                    {/* 5.1 + 5.2 — Received totals (using filteredTxs) */}
                     {(() => {
-                      const totals = aggregateTotals(txHistory)
+                      const totals = aggregateTotals(filteredTxs)
                       return Object.entries(totals).map(([token, rawTotal]) => {
                         const decimals = token === 'ETH' ? 18 : (txHistory.find(tx => tx.tokenSymbol === token)?.tokenDecimal ? parseInt(txHistory.find(tx => tx.tokenSymbol === token)!.tokenDecimal!) : 18)
                         const formatted = parseFloat(formatUnits(rawTotal, decimals)).toFixed(4)
@@ -287,44 +429,92 @@ export default function DashboardPage() {
                               {formatted}{' '}
                               <span className="text-base text-gray-400">{token}</span>
                             </p>
+                            {/* 5.1 — Fiat value display */}
+                            <FiatLine token={token} formattedAmount={formatted} />
                           </div>
                         )
                       })
                     })()}
 
-                    {txHistory.map((tx) => (
-                      <div
-                        key={tx.hash}
-                        className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              tx.direction === 'out'
-                                ? 'text-red-400 bg-red-400/10'
-                                : 'text-green-400 bg-green-400/10'
-                            }`}>
-                              {tx.direction === 'out' ? '−' : '+'} {formatTxValue(tx)} {getTxTokenSymbol(tx)}
-                            </span>
-                            <p className="text-xs text-gray-500 mt-1.5">
-                              {tx.direction === 'out'
-                                ? t.txTo
-                                  ? t.txTo(shortAddress(tx.to ?? ''), formatDate(tx.timeStamp))
-                                  : `To ${shortAddress(tx.to ?? '')} • ${formatDate(tx.timeStamp)}`
-                                : t.txFrom(shortAddress(tx.from), formatDate(tx.timeStamp))}
+                    {/* 5.3 — Sent Totals card */}
+                    {(() => {
+                      const sentTotals = aggregateSentTotals(filteredTxs)
+                      return Object.entries(sentTotals).map(([token, rawTotal]) => {
+                        const decimals = token === 'ETH' ? 18 : (txHistory.find(tx => tx.tokenSymbol === token)?.tokenDecimal ? parseInt(txHistory.find(tx => tx.tokenSymbol === token)!.tokenDecimal!) : 18)
+                        const formatted = parseFloat(formatUnits(rawTotal, decimals)).toFixed(4)
+                        return (
+                          <div key={`sent-${token}`} className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-2">
+                            <p className="text-xs text-orange-400 mb-1">Total {token} sent</p>
+                            <p className="text-2xl font-bold text-red-400">
+                              {formatted}{' '}
+                              <span className="text-base text-gray-400">{token}</span>
                             </p>
+                            {/* 5.1/5.3 — Fiat value for sent totals */}
+                            <FiatLine token={token} formattedAmount={formatted} />
                           </div>
-                          <a
-                            href={`https://sepolia.basescan.org/tx/${tx.hash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
-                          >
-                            ↗
-                          </a>
+                        )
+                      })
+                    })()}
+
+                    {/* 5.5 — Daily Receiving Chart */}
+                    {dailyData.length > 0 && (
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-2">
+                        <p className="text-xs text-gray-400 mb-3">Daily Receiving (last 14 days)</p>
+                        <div className="flex items-end gap-1 h-32">
+                          {dailyData.slice(-14).map(({ date, total }) => (
+                            <div key={date} className="flex flex-col items-center gap-1 flex-1">
+                              <div
+                                className="w-6 bg-indigo-500 rounded-t"
+                                style={{ height: maxTotal > 0n ? `${Number((total * 100n) / maxTotal)}%` : '0%' }}
+                              />
+                              <span className="text-[10px] text-gray-500 -rotate-45">{date.slice(5)}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* 5.2 — Empty state when filters match nothing */}
+                    {filteredTxs.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <span className="text-3xl mb-2">🔍</span>
+                        <p className="text-gray-400 text-sm">No transactions match the current filters</p>
+                      </div>
+                    ) : (
+                      filteredTxs.map((tx) => (
+                        <div
+                          key={tx.hash}
+                          className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                tx.direction === 'out'
+                                  ? 'text-red-400 bg-red-400/10'
+                                  : 'text-green-400 bg-green-400/10'
+                              }`}>
+                                {tx.direction === 'out' ? '−' : '+'} {formatTxValue(tx)} {getTxTokenSymbol(tx)}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1.5">
+                                {tx.direction === 'out'
+                                  ? t.txTo
+                                    ? t.txTo(shortAddress(tx.to ?? ''), formatDate(tx.timeStamp))
+                                    : `To ${shortAddress(tx.to ?? '')} • ${formatDate(tx.timeStamp)}`
+                                  : t.txFrom(shortAddress(tx.from), formatDate(tx.timeStamp))}
+                              </p>
+                            </div>
+                            <a
+                              href={`https://sepolia.basescan.org/tx/${tx.hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
+                            >
+                              ↗
+                            </a>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </>
                 )}
               </div>
@@ -332,6 +522,11 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {/* 6.2 — QR Modal */}
+      {qrLink && (
+        <QrLinkModal link={qrLink} onClose={() => setQrLink(null)} />
+      )}
     </div>
   )
 }
