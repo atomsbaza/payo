@@ -136,6 +136,15 @@ export const translations = {
     feeLoadError: 'ไม่สามารถโหลดข้อมูลค่าธรรมเนียมได้',
     feeRetry: 'ลองใหม่',
 
+    // Company Dashboard & Fee Access Control
+    companyDashTitle: 'Company Dashboard',
+    companyDashSubtitle: 'ติดตามข้อมูลของบริษัท',
+    navCompanyDashboard: 'Company Dashboard',
+    feeAccessDenied: 'ไม่มีสิทธิ์เข้าถึง',
+    feeAccessDeniedDesc: 'หน้านี้สำหรับ Company Wallet เท่านั้น',
+    feeConnectWallet: 'กรุณาเชื่อมต่อ Company Wallet',
+    feeConnectWalletDesc: 'เชื่อมต่อ wallet เพื่อดูข้อมูลค่าธรรมเนียม',
+
     // Chain Selector
     labelChain: 'Network',
     selectChain: 'เลือก Network',
@@ -168,6 +177,24 @@ export const translations = {
     securedByBase: '🔒 Secured by Base — funds sent directly to recipient',
     footerTerms: 'Terms',
     footerPrivacy: 'Privacy',
+
+    // Demo Flow
+    demoModeLabel: 'Demo Mode',
+    demoBanner: '🧪 Demo Mode — ไม่มีการเรียก wallet หรือ blockchain จริง',
+    demoStepCreate: 'สร้าง QR',
+    demoStepPay: 'ชำระเงิน',
+    demoStepSuccess: 'สำเร็จ',
+    demoCreateTitle: 'สร้าง Payment Link (Demo)',
+    demoCreateDesc: 'ตัวอย่างการสร้าง payment link — ข้อมูลด้านล่างเป็นข้อมูลจำลอง',
+    demoCreateBtn: 'สร้าง Payo Link →',
+    demoPayTitle: 'ชำระเงิน (Demo)',
+    demoSendBtn: 'Send 0.01 ETH →',
+    demoSending: '⏳ กำลังจำลองการโอน...',
+    demoSuccessTitle: 'ชำระเงินสำเร็จ! 🎉',
+    demoSuccessDesc: '0.01 ETH ถึงมือผู้รับแล้ว (จำลอง)',
+    demoTryReal: 'สร้าง Payment Link จริง →',
+    demoGoHome: 'กลับหน้าแรก',
+    demoTxHash: 'TX Hash (จำลอง)',
   },
 
   en: {
@@ -307,6 +334,15 @@ export const translations = {
     feeLoadError: 'Failed to load fee data',
     feeRetry: 'Retry',
 
+    // Company Dashboard & Fee Access Control
+    companyDashTitle: 'Company Dashboard',
+    companyDashSubtitle: 'Track company data',
+    navCompanyDashboard: 'Company Dashboard',
+    feeAccessDenied: 'Access Denied',
+    feeAccessDeniedDesc: 'This page is for Company Wallet only',
+    feeConnectWallet: 'Please connect Company Wallet',
+    feeConnectWalletDesc: 'Connect your wallet to view fee data',
+
     // Chain Selector
     labelChain: 'Network',
     selectChain: 'Select Network',
@@ -339,6 +375,24 @@ export const translations = {
     securedByBase: '🔒 Secured by Base — funds sent directly to recipient',
     footerTerms: 'Terms',
     footerPrivacy: 'Privacy',
+
+    // Demo Flow
+    demoModeLabel: 'Demo Mode',
+    demoBanner: '🧪 Demo Mode — No real wallet or blockchain calls',
+    demoStepCreate: 'Create QR',
+    demoStepPay: 'Pay',
+    demoStepSuccess: 'Success',
+    demoCreateTitle: 'Create Payment Link (Demo)',
+    demoCreateDesc: 'Example payment link creation — data below is simulated',
+    demoCreateBtn: 'Create Payo Link →',
+    demoPayTitle: 'Pay (Demo)',
+    demoSendBtn: 'Send 0.01 ETH →',
+    demoSending: '⏳ Simulating transfer...',
+    demoSuccessTitle: 'Payment Successful! 🎉',
+    demoSuccessDesc: '0.01 ETH has been sent to the recipient (simulated)',
+    demoTryReal: 'Create a Real Payment Link →',
+    demoGoHome: 'Go Home',
+    demoTxHash: 'TX Hash (simulated)',
   },
 }
 

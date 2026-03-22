@@ -22,8 +22,11 @@ describe('Security Header Middleware', () => {
     mockHeaders.clear()
   })
 
-  function callMiddleware() {
-    return middleware({} as any)
+  function callMiddleware(pathname = '/') {
+    return middleware({
+      nextUrl: { pathname },
+      url: 'http://localhost:3000' + pathname,
+    } as any)
   }
 
   // Req 4.2: X-Frame-Options: DENY

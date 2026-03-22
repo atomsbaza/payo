@@ -14,6 +14,11 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   ConnectButton: () => <div data-testid="connect-button">ConnectButton</div>,
 }))
 
+// Mock useIsCompanyWallet hook (uses wagmi's useAccount internally)
+vi.mock('@/hooks/useIsCompanyWallet', () => ({
+  useIsCompanyWallet: () => ({ isCompany: false, isConnected: false }),
+}))
+
 let mockLang: Lang = 'th'
 vi.mock('@/context/LangContext', () => ({
   useLang: () => ({
