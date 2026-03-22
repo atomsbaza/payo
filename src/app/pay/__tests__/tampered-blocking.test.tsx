@@ -25,6 +25,7 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   ConnectButton: (props: { label?: string }) => (
     <button data-testid="connect-button">{props.label ?? 'Connect'}</button>
   ),
+  useConnectModal: () => ({ openConnectModal: vi.fn() }),
 }))
 
 vi.mock('@/context/LangContext', () => ({
@@ -61,6 +62,7 @@ vi.mock('wagmi', () => ({
   useSendTransaction: () => ({ sendTransactionAsync: vi.fn() }),
   useChainId: () => 84532,
   useSwitchChain: () => ({ switchChain: vi.fn(), isPending: false }),
+  useEnsName: () => ({ data: undefined }),
 }))
 
 // Valid encoded payment link for testing

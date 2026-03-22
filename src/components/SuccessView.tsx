@@ -9,11 +9,13 @@ type SuccessViewProps = {
   token: string
   recipientAddress: string
   txHash: `0x${string}`
+  blockExplorerUrl: string
+  confirmedAt: number
 }
 
-export function SuccessView({ amount, token, recipientAddress, txHash }: SuccessViewProps) {
+export function SuccessView({ amount, token, recipientAddress, txHash, blockExplorerUrl, confirmedAt }: SuccessViewProps) {
   const router = useRouter()
-  const { t } = useLang()
+  const { t, lang } = useLang()
 
   async function handleShare() {
     const text = t.successShareText(amount, token, txHash)
@@ -49,12 +51,20 @@ export function SuccessView({ amount, token, recipientAddress, txHash }: Success
             <span className="text-gray-500">{t.successTxHash}</span>
             <span className="font-mono text-gray-200">{shortAddress(txHash)}</span>
           </div>
+          {confirmedAt > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-500">{t.confirmedAt}</span>
+              <span className="text-gray-200 text-xs">
+                {new Date(confirmedAt).toLocaleString(lang === 'th' ? 'th-TH' : 'en-US')}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Buttons */}
         <div className="space-y-3">
           <a
-            href={`https://sepolia.basescan.org/tx/${txHash}`}
+            href={`${blockExplorerUrl}/tx/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full px-4 py-3 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl text-sm font-medium transition-colors"

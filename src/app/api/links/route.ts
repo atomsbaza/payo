@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { encodePaymentLink, type PaymentLinkData } from '@/lib/encode'
-import { CreateLinkRequestSchema } from '@/lib/validate'
+import { CreateLinkRequestSchema, validatePaymentLink } from '@/lib/validate'
 import { signPaymentLink } from '@/lib/hmac'
 import { createRateLimiter } from '@/lib/rate-limit'
 
 const limiter = createRateLimiter(20, 60_000)
+
+// In-memory counter — resets on server restart.
+// Replace with a persistent store (e.g. database) when available.
+let linkCount = 0
+
+// GET /api/links — return the number of links created
+export async function GET() {
+  return NextResponse.json({ count: linkCount })
+}
+
 
 // POST /api/links — encode a payment link payload
 export async function POST(req: NextRequest) {
@@ -29,6 +39,19 @@ export async function POST(req: NextRequest) {
 
     const validated = result.data
 
+    // Validate chain and token against registry
+    const chainTokenValidation = validatePaymentLink({
+      address: validated.address,
+      token: validated.token,
+      amount: validated.amount,
+      memo: validated.memo,
+      chainId: validated.chainId,
+      ...(validated.expiresAt ? { expiresAt: validated.expiresAt } : {}),
+    })
+    if (!chainTokenValidation.valid) {
+      return NextResponse.json({ error: chainTokenValidation.reason }, { status: 400 })
+    }
+
     // Truncate memo to 200 chars
     const memo = validated.memo.slice(0, 200)
 
@@ -48,6 +71,8 @@ export async function POST(req: NextRequest) {
     const id = encodePaymentLink(signedData)
     const baseUrl = req.nextUrl.origin
     const url = `${baseUrl}/pay/${id}`
+
+    linkCount++
 
     return NextResponse.json({ id, url, data: signedData })
   } catch {

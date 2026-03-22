@@ -1,8 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useLang } from '@/context/LangContext'
+import { PayoLogo } from '@/components/PayoLogo'
 
 const NAV_LINKS = [
   { href: '/', labelKey: 'navHome' as const },
@@ -17,10 +19,10 @@ export function Navbar() {
 
   return (
     <nav className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-xl font-bold text-indigo-400">⚡</span>
-        <span className="font-bold text-base sm:text-lg">{t.brand.replace('⚡ ', '')}</span>
-      </div>
+      <Link href="/" className="flex items-center gap-2 shrink-0">
+        <PayoLogo size={24} />
+        <span className="font-bold text-base sm:text-lg">Payo</span>
+      </Link>
       <div className="flex items-center gap-2 sm:gap-4">
         <button
           onClick={toggleLang}

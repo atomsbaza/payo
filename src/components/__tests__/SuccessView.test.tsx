@@ -24,6 +24,7 @@ vi.mock('@/context/LangContext', () => ({
       successTxHash: 'TX Hash',
       successRecipient: 'Recipient',
       successShareText: (amount: string, token: string, hash: string) => `I just sent ${amount} ${token} successfully! TX: ${hash}`,
+      confirmedAt: 'Confirmed at',
     },
     toggleLang: () => {},
   }),
@@ -77,6 +78,8 @@ describe('SuccessView — Property 4: Success view contains all required payment
               token={token}
               recipientAddress={recipientAddress}
               txHash={txHash}
+              blockExplorerUrl="https://sepolia.basescan.org"
+              confirmedAt={Date.now()}
             />
           )
 

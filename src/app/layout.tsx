@@ -14,8 +14,16 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Crypto Pay Link',
-  description: 'PromptPay สำหรับ Crypto — สร้าง payment link แล้วแชร์ได้เลย',
+  title: 'Payo',
+  description: 'โอน crypto ง่ายเหมือน PromptPay',
+  openGraph: {
+    title: 'Payo',
+    description: 'Crypto payments, as easy as a link.',
+    images: ['/og-payo.svg'],
+  },
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

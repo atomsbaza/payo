@@ -1,16 +1,26 @@
 import { z } from 'zod'
+import { getChain } from './chainRegistry'
+import { getToken } from './tokenRegistry'
 
 export const PaymentLinkSchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
-  token: z.enum(['ETH', 'USDC'], { message: 'Unsupported token' }),
+  token: z.string(),
   amount: z.string().refine(
     (val) => val === '' || (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 1_000_000),
     { message: 'Amount must be empty or between 0 and 1,000,000' }
   ),
   memo: z.string().default(''),
-  chainId: z.literal(84532, { message: 'Invalid chain' }),
+  chainId: z.number().refine(id => !!getChain(id), { message: 'Unsupported chain' }),
   expiresAt: z.number().optional(),
   signature: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (getChain(data.chainId) && !getToken(data.chainId, data.token)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['token'],
+      message: 'Token not supported on this chain',
+    })
+  }
 })
 
 export type ValidatedPaymentLink = z.infer<typeof PaymentLinkSchema>
@@ -27,7 +37,7 @@ export function validatePaymentLink(
 
 export const CreateLinkRequestSchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
-  token: z.enum(['ETH', 'USDC'], { message: 'Unsupported token' }),
+  token: z.string(),
   amount: z.string().refine(
     (val) => val === '' || (!isNaN(Number(val)) && Number(val) > 0),
     { message: 'Amount must be empty or greater than 0' }

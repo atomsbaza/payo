@@ -1,16 +1,27 @@
 'use client'
 
-import { TOKENS } from '@/lib/tokens'
+import { useEffect } from 'react'
+import { getTokensForChain } from '@/lib/tokenRegistry'
 
 type Props = {
   value: string
   onChange: (symbol: string) => void
+  chainId: number
 }
 
-export function TokenSelector({ value, onChange }: Props) {
+export function TokenSelector({ value, onChange, chainId }: Props) {
+  const tokens = getTokensForChain(chainId)
+
+  useEffect(() => {
+    const tokens = getTokensForChain(chainId)
+    if (!tokens.find(t => t.symbol === value)) {
+      onChange('ETH')
+    }
+  }, [chainId])
+
   return (
-    <div className="flex gap-2">
-      {TOKENS.map((token) => (
+    <div className="flex gap-2 flex-wrap">
+      {tokens.map((token) => (
         <button
           key={token.symbol}
           type="button"
@@ -22,6 +33,7 @@ export function TokenSelector({ value, onChange }: Props) {
           }`}
         >
           <span className="text-sm">{token.symbol}</span>
+          <span className="text-xs text-gray-500">{token.name}</span>
         </button>
       ))}
     </div>

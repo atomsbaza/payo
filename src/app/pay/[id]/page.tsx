@@ -1,14 +1,17 @@
 'use client'
 
 import { use, useEffect, useMemo, useState } from 'react'
-import { useAccount, useBalance, useReadContract, useSendTransaction, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useAccount, useBalance, useReadContract, useSendTransaction, useWriteContract, useWaitForTransactionReceipt, useEnsName } from 'wagmi'
+import { mainnet } from 'wagmi/chains'
+import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit'
 import { parseEther, parseUnits, formatUnits } from 'viem'
 import confetti from 'canvas-confetti'
 import { decodePaymentLink, isLinkExpired, shortAddress } from '@/lib/encode'
 import { validatePaymentLink } from '@/lib/validate'
 import { isSelfPayment } from '@/lib/self-payment'
-import { getToken, ERC20_ABI } from '@/lib/tokens'
+import { ERC20_ABI } from '@/lib/tokens'
+import { getToken } from '@/lib/tokenRegistry'
+import { getChain } from '@/lib/chainRegistry'
 import { calculateFee, formatFeePercent } from '@/lib/fee'
 import { CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
@@ -16,7 +19,11 @@ import { SuccessView } from '@/components/SuccessView'
 import { Navbar } from '@/components/Navbar'
 import Skeleton from '@/components/Skeleton'
 import { BlockedScreen } from '@/components/BlockedScreen'
+import { Jazzicon } from '@/components/Jazzicon'
 import { useLang } from '@/context/LangContext'
+import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
+import { calculateFiatValue } from '@/lib/fiatCalc'
+import { isMobileBrowser } from '@/lib/mobileDetect'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -26,23 +33,41 @@ export default function PayPage({ params }: Props) {
   const { id } = use(params)
   const { address, isConnected } = useAccount()
   const { t, lang } = useLang()
+  const { openConnectModal } = useConnectModal()
+  const isMobile = isMobileBrowser()
   const [customAmount, setCustomAmount] = useState('')
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
   const [hmacVerified, setHmacVerified] = useState<boolean | null>(null)
   const [tampered, setTampered] = useState<boolean | null>(null)
+  const [addressCopied, setAddressCopied] = useState(false)
+  const [confirmedAt, setConfirmedAt] = useState<number>(0)
+  const [pollStartTime, setPollStartTime] = useState<number>(0)
+  const [pollTimedOut, setPollTimedOut] = useState(false)
+  const [feeExpanded, setFeeExpanded] = useState(false)
 
   const data = decodePaymentLink(id)
+
+  // ENS name resolution (mainnet only)
+  const { data: ensName } = useEnsName({
+    address: data?.address as `0x${string}`,
+    chainId: mainnet.id,
+    query: { enabled: !!data?.address },
+  })
 
   // Validate payment link data
   const validation = data ? validatePaymentLink(data) : null
   const isValidData = validation?.valid === true
 
-  const token = data ? getToken(data.token) : undefined
+  const token = data ? getToken(data.chainId, data.token) : undefined
+  const chain = data ? getChain(data.chainId) : undefined
 
   // Self-payment check
   const selfPayment = data ? isSelfPayment(address, data.address) : false
+
+  // CoinGecko fiat price
+  const coinGeckoPrice = useCoinGeckoPrice(data?.token ?? '')
 
   // HMAC verification via API
   useEffect(() => {
@@ -124,6 +149,32 @@ export default function PayPage({ params }: Props) {
     frame()
   }, [isSuccess])
 
+  // Capture timestamp when transaction confirms
+  useEffect(() => {
+    if (isSuccess && confirmedAt === 0) {
+      setConfirmedAt(Date.now())
+    }
+  }, [isSuccess])
+
+  // Start poll timer when txHash is set
+  useEffect(() => {
+    if (txHash && !pollStartTime) {
+      setPollStartTime(Date.now())
+    }
+  }, [txHash])
+
+  // Timeout check (120 seconds)
+  useEffect(() => {
+    if (!txHash || isSuccess || pollTimedOut) return
+    const interval = setInterval(() => {
+      if (Date.now() - pollStartTime > 120_000) {
+        setPollTimedOut(true)
+        clearInterval(interval)
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [txHash, isSuccess, pollStartTime, pollTimedOut])
+
   // Invalid link or validation failure
   if (!data || !isValidData) {
     const reason = validation && !validation.valid ? validation.reason : undefined
@@ -158,6 +209,17 @@ export default function PayPage({ params }: Props) {
         ? parseEther(effectiveAmount)
         : parseUnits(effectiveAmount, token?.decimals ?? 18))
     : false
+
+  async function handleCopyAddress() {
+    if (!data) return
+    try {
+      await navigator.clipboard.writeText(data.address)
+      setAddressCopied(true)
+      setTimeout(() => setAddressCopied(false), 2000)
+    } catch {
+      // silent fail
+    }
+  }
 
   async function handlePay() {
     if (!effectiveAmount || !token || !data) return
@@ -229,13 +291,15 @@ export default function PayPage({ params }: Props) {
         token={data.token}
         recipientAddress={data.address}
         txHash={txHash}
+        blockExplorerUrl={chain?.blockExplorerUrl ?? 'https://sepolia.basescan.org'}
+        confirmedAt={confirmedAt}
       />
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {isConnected && <WrongNetworkBanner />}
+      {isConnected && <WrongNetworkBanner expectedChainId={data.chainId} />}
 
       <Navbar />
 
@@ -272,15 +336,29 @@ export default function PayPage({ params }: Props) {
         ) : (
         <>
         {/* Payment card */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-white/[0.03] ring-1 ring-white/10 rounded-2xl p-5 sm:p-6 mb-4 sm:mb-6">
+          {chain?.isTestnet && (
+            <div
+              role="status"
+              className="mb-3 text-center"
+            >
+              <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full">
+                TESTNET
+              </span>
+            </div>
+          )}
           <div className="text-center mb-5">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-500/20 flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl">💸</span>
+            <div className="flex items-center justify-center mx-auto mb-3">
+              <Jazzicon address={data.address} size={56} />
             </div>
             <h1 className="text-lg sm:text-xl font-bold">
               {data.amount
                 ? t.payTitle(data.amount, data.token)
                 : t.payTitleNoAmount(data.token)}
+              {data.amount && coinGeckoPrice !== null && (() => {
+                const fiat = calculateFiatValue(data.amount, coinGeckoPrice)
+                return fiat ? <span className="text-gray-400 text-sm font-normal ml-2">≈ ${fiat}</span> : null
+              })()}
             </h1>
             {data.memo && (
               <p className="text-gray-400 mt-1 text-sm">"{data.memo}"</p>
@@ -288,9 +366,40 @@ export default function PayPage({ params }: Props) {
           </div>
 
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-gray-500">{t.labelRecipient}</span>
-              <span className="font-mono text-gray-200 text-xs sm:text-sm">{shortAddress(data.address)}</span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex flex-col items-end">
+                  {ensName ? (
+                    <>
+                      <span className="font-medium text-indigo-400 text-sm">{ensName}</span>
+                      <span className="font-mono text-gray-500 text-xs">{shortAddress(data.address)}</span>
+                    </>
+                  ) : (
+                    <span className="font-mono text-gray-200 text-xs sm:text-sm">
+                      {shortAddress(data.address)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleCopyAddress}
+                  className="text-gray-400 hover:text-white transition-colors"
+                  aria-label={t.copyAddress}
+                >
+                  {addressCopied ? '✓' : '📋'}
+                </button>
+                {chain && (
+                  <a
+                    href={`${chain.blockExplorerUrl}/address/${data.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-white transition-colors"
+                    aria-label={t.viewOnExplorer}
+                  >
+                    ↗
+                  </a>
+                )}
+              </div>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">{t.labelTokenField}</span>
@@ -298,7 +407,7 @@ export default function PayPage({ params }: Props) {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">{t.labelNetwork}</span>
-              <span className="text-green-400 text-xs">{t.networkName}</span>
+              <span className="text-green-400 text-xs">{chain?.name ?? String(data.chainId)}</span>
             </div>
             {data.expiresAt && (
               <div className="flex justify-between">
@@ -310,36 +419,49 @@ export default function PayPage({ params }: Props) {
             )}
           </div>
 
-          {/* Fee breakdown */}
+          {/* Fee breakdown toggle */}
           {feeBreakdown && token && contractReady && (
-            <div className="mt-4 pt-4 border-t border-white/10 space-y-2 text-sm">
-              {feeRateError && (
-                <p className="text-amber-400 text-xs mb-2">⚠️ Could not read fee rate from contract, using default</p>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Fee rate</span>
-                <span className="text-gray-300">{formatFeePercent(feeRate)}</span>
-              </div>
-              {feeBreakdown.fee === 0n ? (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Fee</span>
-                  <span className="text-green-400">No fee</span>
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <button
+                onClick={() => setFeeExpanded(!feeExpanded)}
+                aria-expanded={feeExpanded}
+                className="w-full flex justify-between items-center text-sm text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <span>{feeExpanded ? t.hideFeeBreakdown : t.showFeeBreakdown}</span>
+                <span>{feeExpanded ? '▴' : '▾'}</span>
+              </button>
+
+              {feeExpanded && (
+                <div className="mt-3 space-y-2 text-sm">
+                  {feeRateError && (
+                    <p className="text-amber-400 text-xs mb-2">⚠️ Could not read fee rate from contract, using default</p>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Fee rate</span>
+                    <span className="text-gray-300">{formatFeePercent(feeRate)}</span>
+                  </div>
+                  {feeBreakdown.fee === 0n ? (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Fee</span>
+                      <span className="text-green-400">No fee</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Total</span>
+                        <span className="text-gray-200">{formatUnits(feeBreakdown.total, token.decimals)} {data.token}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Fee</span>
+                        <span className="text-amber-400">-{formatUnits(feeBreakdown.fee, token.decimals)} {data.token}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Recipient gets</span>
+                        <span className="text-green-400">{formatUnits(feeBreakdown.net, token.decimals)} {data.token}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Total</span>
-                    <span className="text-gray-200">{formatUnits(feeBreakdown.total, token.decimals)} {data.token}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Fee</span>
-                    <span className="text-amber-400">-{formatUnits(feeBreakdown.fee, token.decimals)} {data.token}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Recipient gets</span>
-                    <span className="text-green-400">{formatUnits(feeBreakdown.net, token.decimals)} {data.token}</span>
-                  </div>
-                </>
               )}
             </div>
           )}
@@ -352,6 +474,7 @@ export default function PayPage({ params }: Props) {
             <div className="relative">
               <input
                 type="number"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
@@ -381,6 +504,37 @@ export default function PayPage({ params }: Props) {
           </div>
         )}
 
+        {/* Gas-for-ERC20 tooltip */}
+        {isConnected && token?.address !== 'native' && (
+          <div className="mb-4 px-4 py-2.5 rounded-xl text-sm bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+            ℹ️ {t.gasForErc20}
+          </div>
+        )}
+
+        {/* Polling progress indicator */}
+        {txHash && !isSuccess && !pollTimedOut && (
+          <div className="mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-sm text-center">
+            <div className="animate-pulse mb-2">⏳</div>
+            <p className="text-indigo-400">{t.waitingForConfirmation}</p>
+            <p className="text-gray-500 text-xs mt-1">{t.confirmationProgress}</p>
+          </div>
+        )}
+
+        {/* Polling timeout message */}
+        {pollTimedOut && (
+          <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
+            <p className="text-amber-400 mb-2">{t.pollTimeout}</p>
+            <a
+              href={`${chain?.blockExplorerUrl}/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-400 hover:text-indigo-300 underline"
+            >
+              {t.checkOnExplorer}
+            </a>
+          </div>
+        )}
+
         {/* Self-payment warning */}
         {selfPayment && (
           <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
@@ -406,14 +560,23 @@ export default function PayPage({ params }: Props) {
 
         {/* Action */}
         {!isConnected ? (
-          <div className="flex justify-center">
-            <ConnectButton label={t.connectToPayBtn} />
-          </div>
+          isMobile ? (
+            <button
+              onClick={() => openConnectModal?.()}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl transition-colors text-sm sm:text-base"
+            >
+              {t.openInWallet}
+            </button>
+          ) : (
+            <div className="flex justify-center">
+              <ConnectButton label={t.connectToPayBtn} />
+            </div>
+          )
         ) : (
           <button
             onClick={handlePay}
             disabled={!effectiveAmount || isPending || isConfirming || isInsufficient || selfPayment}
-            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors text-sm sm:text-base"
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-2xl transition-colors text-sm sm:text-base"
           >
             {isConfirming
               ? t.waitingConfirm
@@ -422,6 +585,11 @@ export default function PayPage({ params }: Props) {
               : t.payBtn(effectiveAmount || '?', data.token)}
           </button>
         )}
+
+        {/* Secured by Base badge */}
+        <p className="text-xs text-gray-400 text-center mt-4">
+          🔒 Secured by Base — funds sent directly to recipient
+        </p>
         </>
         )}
       </main>

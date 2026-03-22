@@ -119,6 +119,54 @@ describe('Property 10: Long memo is truncated to 200 chars', () => {
   })
 })
 
+// Feature: token-chain-expansion
+// Validates: Requirements 8.3, 8.4
+describe('Multi-chain validation', () => {
+  let POST: typeof import('../route').POST
+
+  beforeEach(async () => {
+    const mod = await import('../route')
+    POST = mod.POST
+  })
+
+  it('returns 400 for unsupported chainId', async () => {
+    const res = await POST(makeRequest({
+      address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+      token: 'ETH',
+      amount: '1',
+      memo: '',
+      chainId: 999999,
+    }))
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toBe('Unsupported chain')
+  })
+
+  it('returns 400 for token not supported on chain (cbBTC on Optimism)', async () => {
+    const res = await POST(makeRequest({
+      address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+      token: 'cbBTC',
+      amount: '1',
+      memo: '',
+      chainId: 10,
+    }))
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toBe('Token not supported on this chain')
+  })
+
+  it('returns 200 for valid multi-chain request (USDC on Base Mainnet)', async () => {
+    const res = await POST(makeRequest({
+      address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+      token: 'USDC',
+      amount: '1',
+      memo: '',
+      chainId: 8453,
+    }))
+    expect(res.status).toBe(200)
+  })
+})
+
 // Feature: tampered-link-blocking, Property 1: API tampered field is the logical inverse of verified
 // Validates: Requirements 3.1, 3.2, 3.3
 describe('Property 1: API tampered field is the logical inverse of verified', () => {

@@ -1,7 +1,7 @@
 export const translations = {
   th: {
     // Navbar
-    brand: '⚡ Crypto Pay Link',
+    brand: 'Payo',
     navDashboard: 'Dashboard',
     navCreateLink: '+ สร้าง Link',
 
@@ -16,7 +16,7 @@ export const translations = {
     amountPlaceholder: '0.00',
     labelMemo: 'Memo / Note (optional)',
     memoPlaceholder: 'เช่น ค่าข้าว, ค่า concert, ค่า freelance',
-    createButton: 'สร้าง Payment Link ⚡',
+    createButton: 'สร้าง Payo Link',
     saveButton: 'บันทึก Link ✓',
     linkReady: 'QR พร้อมแชร์แล้ว! 🎉',
     viewDashboard: 'ดู links ทั้งหมดใน Dashboard →',
@@ -34,7 +34,7 @@ export const translations = {
     expiredLinkDesc: (date: string) => `ลิงก์นี้หมดอายุเมื่อ ${date}`,
     labelBalance: 'ยอดคงเหลือ',
     insufficientBalance: 'ยอดไม่พอ',
-    paySuccess: 'โอนสำเร็จ! 🎉',
+    paySuccess: 'เงินถึงแล้ว 🎉',
     paySuccessDesc: (amount: string, token: string) => `${amount} ${token} ถึงมือผู้รับแล้ว`,
     viewOnBasescan: 'ดู Transaction บน Basescan ↗',
     payTitle: (amount: string, token: string) => `โอน ${amount} ${token}`,
@@ -65,7 +65,7 @@ export const translations = {
     tabLinks: 'Payment Links',
     tabTx: 'TX ที่รับ',
     emptyLinks: 'ยังไม่มี payment link',
-    emptyLinksBtn: 'สร้าง Payment Link แรก ⚡',
+    emptyLinksBtn: 'สร้าง Payo Link แรก',
     noAmount: (token: string) => `${token} (ไม่ระบุจำนวน)`,
     btnCopy: 'Copy',
     btnCopied: '✓',
@@ -89,9 +89,9 @@ export const translations = {
     createToShare: 'กดสร้างลิงก์เพื่อแชร์',
 
     // Landing Page
-    heroTitle: 'PromptPay สำหรับ Crypto',
+    heroTitle: 'โอน crypto ง่ายเหมือน PromptPay',
     heroSubtitle: 'สร้าง link รับเงิน crypto ง่ายๆ — แชร์ให้ใครก็ได้ โอนข้าม wallet ได้ทันที',
-    heroCta: 'สร้าง Payment Link',
+    heroCta: 'สร้าง Payo Link',
     howItWorksTitle: 'วิธีใช้งาน',
     step1Title: 'สร้าง Link',
     step1Desc: 'ระบุ wallet address, token, จำนวนเงิน แล้วสร้าง payment link',
@@ -99,7 +99,7 @@ export const translations = {
     step2Desc: 'ส่ง link หรือ QR code ให้ผู้โอนผ่าน chat หรือ social media',
     step3Title: 'รับเงิน',
     step3Desc: 'ผู้โอนกดจ่ายผ่าน link — เงินเข้า wallet คุณโดยตรง',
-    valuePropsTitle: 'ทำไมต้อง Crypto Pay Link?',
+    valuePropsTitle: 'ทำไมต้อง Payo?',
     valueProp1: 'Trustless — ไม่ต้องเชื่อใจตัวกลาง เงินโอนตรงถึง wallet',
     valueProp2: 'Low Cost — ค่า gas ต่ำบน Base network',
     valueProp3: 'Cross-Wallet — ใช้ได้กับทุก wallet ที่รองรับ EVM',
@@ -135,11 +135,44 @@ export const translations = {
     feeNoTxDesc: 'ธุรกรรมค่าธรรมเนียมจะแสดงที่นี่เมื่อมีการชำระเงิน',
     feeLoadError: 'ไม่สามารถโหลดข้อมูลค่าธรรมเนียมได้',
     feeRetry: 'ลองใหม่',
+
+    // Chain Selector
+    labelChain: 'Network',
+    selectChain: 'เลือก Network',
+    testnetBadge: 'Testnet',
+    errorUnsupportedChain: 'ไม่รองรับ chain นี้',
+    errorTokenNotOnChain: 'Token นี้ไม่รองรับบน chain ที่เลือก',
+
+    // UX Polish
+    copyAddress: 'Copy address',
+    viewOnExplorer: 'ดูบน Explorer',
+    gasForErc20: 'การโอน ERC-20 token ต้องใช้ ETH เล็กน้อยสำหรับค่า gas',
+
+    // UX Improvements
+    addressValid: 'Address ถูกต้อง',
+    addressInvalid: 'Address ไม่ถูกต้อง',
+    addressChecksumWarning: 'Checksum ไม่ถูกต้อง — ตรวจสอบ address อีกครั้ง',
+    showFeeBreakdown: '▾ ดูรายละเอียดค่าธรรมเนียม',
+    hideFeeBreakdown: '▴ ซ่อนรายละเอียด',
+    openInWallet: 'เปิดใน Wallet',
+    confirmedAt: 'เวลาโอน',
+    shareQR: 'แชร์ QR',
+    waitingForConfirmation: 'รอ confirmation...',
+    confirmationProgress: 'กำลังตรวจสอบ transaction บน blockchain',
+    pollTimeout: 'ยังไม่ได้รับ confirmation — ตรวจสอบบน block explorer',
+    checkOnExplorer: 'ตรวจสอบบน Explorer',
+
+    // Payo Rebrand — new keys
+    demoBtn: 'ดู Demo →',
+    socialProof: (count: number) => `สร้าง payment link ไปแล้ว ${count} รายการ`,
+    securedByBase: '🔒 Secured by Base — funds sent directly to recipient',
+    footerTerms: 'Terms',
+    footerPrivacy: 'Privacy',
   },
 
   en: {
     // Navbar
-    brand: '⚡ Crypto Pay Link',
+    brand: 'Payo',
     navDashboard: 'Dashboard',
     navCreateLink: '+ Create Link',
 
@@ -154,7 +187,7 @@ export const translations = {
     amountPlaceholder: '0.00',
     labelMemo: 'Memo / Note (optional)',
     memoPlaceholder: 'e.g. lunch, concert ticket, freelance work',
-    createButton: 'Create Payment Link ⚡',
+    createButton: 'Create Payo Link',
     saveButton: 'Save Link ✓',
     linkReady: 'QR Ready to Share! 🎉',
     viewDashboard: 'View all links in Dashboard →',
@@ -188,7 +221,7 @@ export const translations = {
     errorGeneric: 'Something went wrong, please try again',
     retryBtn: 'Try Again',
     retryCount: (n: number) => `Attempted ${n} time${n > 1 ? 's' : ''}`,
-    connectToPayBtn: 'Connect Wallet to Pay',
+    connectToPayBtn: 'Connect to Pay with Payo',
     waitingWallet: '⏳ Waiting for wallet approval...',
     waitingConfirm: '⏳ Waiting for confirmation...',
     payBtn: (amount: string, token: string) => `Send ${amount} ${token} →`,
@@ -203,7 +236,7 @@ export const translations = {
     tabLinks: 'Payment Links',
     tabTx: 'TX Received',
     emptyLinks: 'No payment links yet',
-    emptyLinksBtn: 'Create Your First Payment Link ⚡',
+    emptyLinksBtn: 'Create Your First Payo Link',
     noAmount: (token: string) => `${token} (any amount)`,
     btnCopy: 'Copy',
     btnCopied: '✓',
@@ -227,9 +260,9 @@ export const translations = {
     createToShare: 'Create link to share',
 
     // Landing Page
-    heroTitle: 'PromptPay for Crypto',
+    heroTitle: 'Crypto payments, as easy as a link.',
     heroSubtitle: 'Create a payment link to receive crypto — share with anyone, instant cross-wallet transfers',
-    heroCta: 'Create Payment Link',
+    heroCta: 'Create Payo Link',
     howItWorksTitle: 'How It Works',
     step1Title: 'Create a Link',
     step1Desc: 'Enter your wallet address, choose a token and amount, then generate a payment link',
@@ -237,7 +270,7 @@ export const translations = {
     step2Desc: 'Send the link or QR code to the payer via chat or social media',
     step3Title: 'Get Paid',
     step3Desc: 'The payer clicks the link and pays — funds go directly to your wallet',
-    valuePropsTitle: 'Why Crypto Pay Link?',
+    valuePropsTitle: 'Why Payo?',
     valueProp1: 'Trustless — No middleman, funds go straight to your wallet',
     valueProp2: 'Low Cost — Minimal gas fees on Base network',
     valueProp3: 'Cross-Wallet — Works with any EVM-compatible wallet',
@@ -273,6 +306,39 @@ export const translations = {
     feeNoTxDesc: 'Fee transactions will appear here once payments are processed',
     feeLoadError: 'Failed to load fee data',
     feeRetry: 'Retry',
+
+    // Chain Selector
+    labelChain: 'Network',
+    selectChain: 'Select Network',
+    testnetBadge: 'Testnet',
+    errorUnsupportedChain: 'Unsupported chain',
+    errorTokenNotOnChain: 'Token not supported on this chain',
+
+    // UX Polish
+    copyAddress: 'Copy address',
+    viewOnExplorer: 'View on Explorer',
+    gasForErc20: 'Sending ERC-20 tokens requires a small amount of ETH for gas fees',
+
+    // UX Improvements
+    addressValid: 'Valid address',
+    addressInvalid: 'Invalid address',
+    addressChecksumWarning: 'Invalid checksum — please verify the address',
+    showFeeBreakdown: '▾ Show fee breakdown',
+    hideFeeBreakdown: '▴ Hide fee breakdown',
+    openInWallet: 'Open in Wallet',
+    confirmedAt: 'Confirmed at',
+    shareQR: 'Share QR',
+    waitingForConfirmation: 'Waiting for confirmation...',
+    confirmationProgress: 'Checking transaction on blockchain',
+    pollTimeout: 'Confirmation not received — check on block explorer',
+    checkOnExplorer: 'Check on Explorer',
+
+    // Payo Rebrand — new keys
+    demoBtn: 'View Demo →',
+    socialProof: (count: number) => `${count} payment links created`,
+    securedByBase: '🔒 Secured by Base — funds sent directly to recipient',
+    footerTerms: 'Terms',
+    footerPrivacy: 'Privacy',
   },
 }
 

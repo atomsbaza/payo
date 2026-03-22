@@ -15,6 +15,7 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   ConnectButton: (props: { label?: string; showBalance?: boolean; accountStatus?: string; chainStatus?: string }) => (
     <button data-testid="connect-button">{props.label ?? 'Connect'}</button>
   ),
+  useConnectModal: () => ({ openConnectModal: vi.fn() }),
 }))
 
 vi.mock('@/context/LangContext', () => ({
@@ -56,6 +57,7 @@ vi.mock('wagmi', () => ({
   useSendTransaction: () => ({ sendTransactionAsync: vi.fn() }),
   useChainId: () => 84532,
   useSwitchChain: () => ({ switchChain: vi.fn(), isPending: false }),
+  useEnsName: () => ({ data: undefined }),
 }))
 
 // Mock global fetch for HMAC verification
@@ -101,7 +103,20 @@ describe('Payment Page Fee Breakdown', () => {
 
     await renderPayPage(id)
 
-    // Wait for HMAC verification to resolve and component to render fee breakdown
+    // Fee breakdown is hidden by default behind a toggle
+    const toggleBtn = await screen.findByRole('button', { name: /show fee breakdown/i })
+    expect(toggleBtn).toBeTruthy()
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('false')
+
+    // Fee details should not be visible before toggle
+    expect(screen.queryByText('Fee rate')).toBeNull()
+
+    // Click toggle to expand
+    await act(async () => {
+      fireEvent.click(toggleBtn)
+    })
+
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('true')
     expect(await screen.findByText('Fee rate')).toBeTruthy()
     expect(screen.getByText('Total')).toBeTruthy()
     expect(screen.getByText('Fee')).toBeTruthy()
@@ -124,6 +139,12 @@ describe('Payment Page Fee Breakdown', () => {
 
     await renderPayPage(id)
 
+    // Click toggle to expand fee details
+    const toggleBtn = await screen.findByRole('button', { name: /show fee breakdown/i })
+    await act(async () => {
+      fireEvent.click(toggleBtn)
+    })
+
     expect(await screen.findByText('No fee')).toBeTruthy()
     expect(screen.getByText('0%')).toBeTruthy()
   })
@@ -143,12 +164,21 @@ describe('Payment Page Fee Breakdown', () => {
     const input = await screen.findByPlaceholderText('0.00')
     expect(input).toBeTruthy()
 
-    // Initially no fee breakdown (no amount entered)
-    expect(screen.queryByText('Fee rate')).toBeNull()
+    // Initially no fee breakdown toggle (no amount entered)
+    expect(screen.queryByRole('button', { name: /show fee breakdown/i })).toBeNull()
 
     // Enter a custom amount
     await act(async () => {
       fireEvent.change(input, { target: { value: '2.0' } })
+    })
+
+    // Toggle should now appear
+    const toggleBtn = await screen.findByRole('button', { name: /show fee breakdown/i })
+    expect(toggleBtn).toBeTruthy()
+
+    // Click toggle to expand
+    await act(async () => {
+      fireEvent.click(toggleBtn)
     })
 
     // Fee breakdown should now appear

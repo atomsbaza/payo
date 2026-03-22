@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-primary: #4F46E5;
+  --brand-accent: #10B981;
+  --bg-base: #030712;
+  --bg-surface: #111827;
 }
 
 @theme inline {

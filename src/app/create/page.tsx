@@ -1,14 +1,18 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { encodePaymentLink } from '@/lib/encode'
+import { ChainSelector } from '@/components/ChainSelector'
 import { TokenSelector } from '@/components/TokenSelector'
 import { QRDisplay } from '@/components/QRDisplay'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/context/LangContext'
-import { baseSepolia } from 'wagmi/chains'
+import { getChain } from '@/lib/chainRegistry'
+import { validateEthAddress } from '@/lib/addressValidation'
+import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
+import { calculateFiatValue } from '@/lib/fiatCalc'
 
 const EXPIRY_OPTIONS = [
   { value: '0', labelKey: 'expiryNone' as const },
@@ -22,6 +26,7 @@ export default function CreatePage() {
   const { t, lang } = useLang()
 
   const [recipientAddress, setRecipientAddress] = useState('')
+  const [chainId, setChainId] = useState<number>(84532)
   const [token, setToken] = useState('ETH')
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
@@ -42,11 +47,29 @@ export default function CreatePage() {
       token,
       amount: amount.trim(),
       memo: memo.trim(),
-      chainId: baseSepolia.id,
+      chainId,
       ...(expiresAt ? { expiresAt } : {}),
     })
     return `${typeof window !== 'undefined' ? window.location.origin : ''}/pay/${encoded}`
   }, [recipientAddress, token, amount, memo, expiryDays])
+
+  const addressValidation = useMemo(
+    () => validateEthAddress(recipientAddress),
+    [recipientAddress]
+  )
+
+  // CoinGecko fiat price
+  const coinGeckoPrice = useCoinGeckoPrice(token)
+
+  const qrRef = useRef<HTMLDivElement>(null)
+  const hasScrolled = useRef(false)
+
+  useEffect(() => {
+    if (liveUrl && !hasScrolled.current && qrRef.current) {
+      qrRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      hasScrolled.current = true
+    }
+  }, [liveUrl])
 
   function useMyAddress() {
     if (address) setRecipientAddress(address)
@@ -70,7 +93,7 @@ export default function CreatePage() {
           token,
           amount: amount.trim(),
           memo: memo.trim(),
-          chainId: baseSepolia.id,
+          chainId,
           ...(expiresAt ? { expiresAt } : {}),
         }),
       })
@@ -100,7 +123,7 @@ export default function CreatePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {isConnected && <WrongNetworkBanner />}
+      {isConnected && <WrongNetworkBanner expectedChainId={chainId} />}
 
       <Navbar />
 
@@ -124,6 +147,22 @@ export default function CreatePage() {
                 onChange={(e) => { setRecipientAddress(e.target.value); setSaved(false) }}
                 className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
               />
+              {recipientAddress && (
+                <span
+                  className={`shrink-0 flex items-center text-lg ${
+                    addressValidation.valid && addressValidation.checksumValid
+                      ? 'text-green-400'
+                      : 'text-red-400'
+                  }`}
+                  title={
+                    addressValidation.valid && addressValidation.checksumValid
+                      ? t.addressValid
+                      : t.addressInvalid
+                  }
+                >
+                  {addressValidation.valid && addressValidation.checksumValid ? '✓' : '✗'}
+                </span>
+              )}
               {isConnected && (
                 <button
                   type="button"
@@ -136,10 +175,15 @@ export default function CreatePage() {
             </div>
           </div>
 
+          {/* Chain */}
+          <div>
+            <ChainSelector value={chainId} onChange={(id) => { setChainId(id); setToken('ETH'); setSaved(false) }} />
+          </div>
+
           {/* Token */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t.labelToken}</label>
-            <TokenSelector value={token} onChange={(v) => { setToken(v); setSaved(false) }} />
+            <TokenSelector value={token} onChange={(v) => { setToken(v); setSaved(false) }} chainId={chainId} />
           </div>
 
           {/* Amount */}
@@ -150,6 +194,7 @@ export default function CreatePage() {
             <div className="relative">
               <input
                 type="number"
+                inputMode="decimal"
                 placeholder={t.amountPlaceholder}
                 value={amount}
                 onChange={(e) => { setAmount(e.target.value); setSaved(false) }}
@@ -206,7 +251,8 @@ export default function CreatePage() {
 
         {/* Dynamic QR — shows as soon as address is valid */}
         {liveUrl ? (
-          <div className="mt-6 sm:mt-8 p-5 sm:p-6 bg-white/5 border border-white/10 rounded-2xl">
+          <div ref={qrRef} className="mt-6 sm:mt-8 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-[1px]">
+          <div className="p-5 sm:p-6 bg-gray-950 rounded-2xl">
             <h2 className="text-base sm:text-lg font-semibold mb-4 text-center">
               {t.linkReady}
             </h2>
@@ -214,13 +260,23 @@ export default function CreatePage() {
 
             <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-3 text-sm">
               <div>
+                <span className="text-gray-500">Chain</span>
+                <p className="font-medium">{getChain(chainId)?.name}</p>
+              </div>
+              <div>
                 <span className="text-gray-500">Token</span>
                 <p className="font-medium">{token}</p>
               </div>
               {amount && (
                 <div>
                   <span className="text-gray-500">Amount</span>
-                  <p className="font-medium">{amount} {token}</p>
+                  <p className="font-medium">
+                    {amount} {token}
+                    {coinGeckoPrice !== null && (() => {
+                      const fiat = calculateFiatValue(amount, coinGeckoPrice)
+                      return fiat ? <span className="text-gray-400 text-sm font-normal ml-2">≈ ${fiat}</span> : null
+                    })()}
+                  </p>
                 </div>
               )}
               {memo && (
@@ -255,6 +311,7 @@ export default function CreatePage() {
             >
               {t.viewDashboard}
             </a>
+          </div>
           </div>
         ) : (
           <div className="mt-6 sm:mt-8 p-5 border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-600 min-h-[160px]">
