@@ -1,6 +1,16 @@
+import type { FeeTx } from '@/app/api/fees/[address]/route'
 import type { UnifiedTx } from '@/app/api/tx/[address]/route'
 import type { SavedLink } from '@/lib/validate-storage'
 import { formatUnits } from 'viem'
+
+// --- Dashboard tab helpers ---
+
+export type DashboardTab = 'links' | 'history' | 'fees'
+
+export function getVisibleTabs(isCompany: boolean): DashboardTab[] {
+  const base: DashboardTab[] = ['links', 'history']
+  return isCompany ? [...base, 'fees'] : base
+}
 
 /**
  * Aggregate total received amounts per token type from a list of unified transactions.
@@ -105,4 +115,21 @@ export function matchTxToLink(link: SavedLink, txs: UnifiedTx[]): UnifiedTx | nu
   return candidates.reduce((earliest, tx) =>
     Number(tx.timeStamp) < Number(earliest.timeStamp) ? tx : earliest
   )
+}
+
+// --- Fee aggregation (moved from fees/aggregation.ts) ---
+
+/**
+ * Aggregate fee amounts per token type from a list of fee transactions.
+ * ETH transactions have no tokenSymbol; ERC-20 transactions have tokenSymbol set.
+ * Returns a Record mapping token name to total fee amount (as bigint), plus the transaction count.
+ */
+export function aggregateFeeTotals(txs: FeeTx[]): { totals: Record<string, bigint>; count: number } {
+  const totals: Record<string, bigint> = {}
+  for (const tx of txs) {
+    const token = tx.tokenSymbol ?? 'ETH'
+    const value = BigInt(tx.feeAmount)
+    totals[token] = (totals[token] ?? 0n) + value
+  }
+  return { totals, count: txs.length }
 }

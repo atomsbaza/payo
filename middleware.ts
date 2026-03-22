@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-export function middleware(_request: NextRequest) {
+export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/dashboard/fees')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   const response = NextResponse.next()
 
   response.headers.set('X-Frame-Options', 'DENY')

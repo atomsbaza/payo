@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { FeeTx } from '@/app/api/fees/[address]/route'
-import { aggregateFeeTotals } from '../aggregation'
+import { aggregateFeeTotals } from '../../aggregation'
 
 describe('aggregateFeeTotals', () => {
   it('returns empty totals and count 0 for an empty list', () => {

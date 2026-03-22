@@ -16,6 +16,11 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   ConnectButton: () => <div data-testid="connect-button">ConnectButton</div>,
 }))
 
+// Mock useIsCompanyWallet hook (uses wagmi's useAccount internally)
+vi.mock('@/hooks/useIsCompanyWallet', () => ({
+  useIsCompanyWallet: () => ({ isCompany: true, isConnected: true }),
+}))
+
 // Mock LangContext
 vi.mock('@/context/LangContext', () => ({
   useLang: () => ({
@@ -24,8 +29,7 @@ vi.mock('@/context/LangContext', () => ({
       brand: '⚡ Crypto Pay Link',
       navHome: 'Home',
       navCreateLink: '+ Create Link',
-      navDashboard: 'Dashboard',
-      navFees: 'Fees',
+      navCompanyDashboard: 'Dashboard',
     },
     toggleLang: () => {},
   }),
@@ -33,7 +37,7 @@ vi.mock('@/context/LangContext', () => ({
 
 import { Navbar } from '../Navbar'
 
-const VALID_PATHS = ['/', '/create', '/dashboard', '/dashboard/fees'] as const
+const VALID_PATHS = ['/', '/create', '/dashboard'] as const
 
 describe('Navbar — Property 5: Navbar active state matches current pathname', () => {
   /**
@@ -55,7 +59,7 @@ describe('Navbar — Property 5: Navbar active state matches current pathname', 
 
         // Get all nav links with data-href attribute
         const links = container.querySelectorAll('a[data-href]')
-        expect(links.length).toBe(4)
+        expect(links.length).toBe(3)
 
         let activeCount = 0
         links.forEach((link) => {
