@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { decodePaymentLink } from '@/lib/encode'
+import { decodePaymentLink, isDemoLink, DEMO_PAYMENT_DATA } from '@/lib/encode'
 import { validatePaymentLink } from '@/lib/validate'
 import { verifyPaymentLink } from '@/lib/hmac'
 
@@ -9,6 +9,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+
+  if (isDemoLink(id)) {
+    return NextResponse.json({ id, data: DEMO_PAYMENT_DATA, verified: true, tampered: false })
+  }
+
   const data = decodePaymentLink(id)
 
   if (!data) {

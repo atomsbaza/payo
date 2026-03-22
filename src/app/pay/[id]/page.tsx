@@ -6,7 +6,7 @@ import { mainnet } from 'wagmi/chains'
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit'
 import { parseEther, parseUnits, formatUnits } from 'viem'
 import confetti from 'canvas-confetti'
-import { decodePaymentLink, isLinkExpired, shortAddress } from '@/lib/encode'
+import { decodePaymentLink, isLinkExpired, shortAddress, isDemoLink, DEMO_PAYMENT_DATA } from '@/lib/encode'
 import { validatePaymentLink } from '@/lib/validate'
 import { isSelfPayment } from '@/lib/self-payment'
 import { ERC20_ABI } from '@/lib/tokens'
@@ -47,7 +47,7 @@ export default function PayPage({ params }: Props) {
   const [pollTimedOut, setPollTimedOut] = useState(false)
   const [feeExpanded, setFeeExpanded] = useState(false)
 
-  const data = decodePaymentLink(id)
+  const data = isDemoLink(id) ? DEMO_PAYMENT_DATA : decodePaymentLink(id)
 
   // ENS name resolution (mainnet only)
   const { data: ensName } = useEnsName({

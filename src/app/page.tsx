@@ -53,7 +53,7 @@ export default function LandingPage() {
             {t.heroCta}
           </Link>
           <Link
-            href="/pay/demo"
+            href="/demo/create"
             className="inline-block px-6 py-3 border border-white/20 text-gray-300 hover:bg-white/10 rounded-xl font-semibold transition-colors"
           >
             {t.demoBtn}

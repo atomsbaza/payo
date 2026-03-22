@@ -37,3 +37,15 @@ export function shortAddress(address: string): string {
   if (!address || address.length < 10) return address
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
+
+export const DEMO_PAYMENT_DATA: PaymentLinkData = {
+  address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+  token: 'ETH',
+  amount: '0.01',
+  memo: 'Demo Payment',
+  chainId: 84532,
+}
+
+export function isDemoLink(id: string): boolean {
+  return id === 'demo'
+}
