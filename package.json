@@ -8,14 +8,18 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest --run",
-    "deploy": "npx hardhat run scripts/deploy.ts --network baseSepolia"
+    "deploy": "npx hardhat run scripts/deploy.ts --network baseSepolia",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "@openzeppelin/contracts": "^5.6.1",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.21",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
+    "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
@@ -34,6 +38,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.7.0",
     "dotenv": "^17.3.1",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "fast-check": "^4.6.0",

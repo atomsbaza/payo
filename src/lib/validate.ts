@@ -2,6 +2,17 @@ import { z } from 'zod'
 import { getChain } from './chainRegistry'
 import { getToken } from './tokenRegistry'
 
+/**
+ * Validate that a chain ID is a positive integer (> 0).
+ * Mirrors the database CHECK constraint on payment_links.chain_id.
+ */
+export function validateChainId(chainId: number): { valid: true } | { valid: false; reason: string } {
+  if (!Number.isInteger(chainId) || chainId <= 0) {
+    return { valid: false, reason: 'chain_id must be a positive integer (> 0)' }
+  }
+  return { valid: true }
+}
+
 export const PaymentLinkSchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
   token: z.string(),

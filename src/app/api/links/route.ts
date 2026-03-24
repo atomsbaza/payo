@@ -1,17 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { encodePaymentLink, type PaymentLinkData } from '@/lib/encode'
-import { CreateLinkRequestSchema, validatePaymentLink } from '@/lib/validate'
+import { CreateLinkRequestSchema, validateChainId, validatePaymentLink } from '@/lib/validate'
 import { signPaymentLink } from '@/lib/hmac'
 import { createRateLimiter } from '@/lib/rate-limit'
+import { isDatabaseConfigured, getDb } from '@/lib/db'
+import { paymentLinks } from '@/lib/schema'
+import { count, eq } from 'drizzle-orm'
 
 const limiter = createRateLimiter(20, 60_000)
 
-// In-memory counter — resets on server restart.
-// Replace with a persistent store (e.g. database) when available.
+// In-memory counter — used as fallback when DATABASE_URL is not configured.
 let linkCount = 0
 
 // GET /api/links — return the number of links created
 export async function GET() {
+  if (isDatabaseConfigured()) {
+    try {
+      const db = getDb()
+      const result = await db
+        .select({ value: count() })
+        .from(paymentLinks)
+        .where(eq(paymentLinks.isActive, true))
+      return NextResponse.json({ count: result[0]?.value ?? 0 })
+    } catch {
+      // If DB query fails, fall back to in-memory counter
+      return NextResponse.json({ count: linkCount })
+    }
+  }
   return NextResponse.json({ count: linkCount })
 }
 
@@ -20,7 +35,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   // Rate limiting
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  const { allowed, retryAfter } = limiter.check(ip)
+  const { allowed, retryAfter } = await limiter.check(ip)
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests' },
@@ -72,7 +87,36 @@ export async function POST(req: NextRequest) {
     const baseUrl = req.nextUrl.origin
     const url = `${baseUrl}/pay/${id}`
 
-    linkCount++
+    // Persist to database if configured, otherwise fall back to in-memory counter
+    if (isDatabaseConfigured()) {
+      // Validate chain_id before inserting (mirrors DB CHECK constraint)
+      const chainIdCheck = validateChainId(validated.chainId)
+      if (!chainIdCheck.valid) {
+        return NextResponse.json({ error: chainIdCheck.reason }, { status: 400 })
+      }
+
+      try {
+        const db = getDb()
+        await db.insert(paymentLinks).values({
+          linkId: id,
+          ownerAddress: validated.address,
+          recipient: validated.address,
+          token: validated.token,
+          chainId: validated.chainId,
+          amount: validated.amount || null,
+          memo: memo || null,
+          expiresAt: validated.expiresAt ? new Date(validated.expiresAt) : null,
+          signature: signature,
+        })
+      } catch {
+        return NextResponse.json(
+          { error: 'Failed to create payment link' },
+          { status: 500 },
+        )
+      }
+    } else {
+      linkCount++
+    }
 
     return NextResponse.json({ id, url, data: signedData })
   } catch {

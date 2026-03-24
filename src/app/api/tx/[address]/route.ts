@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRateLimiter } from '@/lib/rate-limit'
+import { isDatabaseConfigured } from '@/lib/db'
+import {
+  getCachedTransactions,
+  upsertTransactions,
+  cleanupStaleTransactions,
+} from '@/lib/tx-cache'
 
 const BASESCAN_API = 'https://api.etherscan.io/v2/api'
 const CHAIN_ID = '84532' // Base Sepolia
+const CHAIN_ID_NUM = 84532
+const STALE_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days for graceful degradation
 const limiter = createRateLimiter(10, 60_000)
 
 export type UnifiedTx = {
@@ -85,14 +93,72 @@ function mapTokenTxs(
     }))
 }
 
-// GET /api/tx/[address] — fetch transaction history from Basescan
+/**
+ * Fetch transactions from Basescan API (ETH + internal + ERC-20).
+ * Returns merged UnifiedTx[] or throws on failure.
+ */
+async function fetchFromBasescan(address: string): Promise<UnifiedTx[]> {
+  const apiKey = process.env.BASESCAN_API_KEY ?? ''
+
+  // Normal ETH transactions
+  const ethUrl = new URL(BASESCAN_API)
+  ethUrl.searchParams.set('chainid', CHAIN_ID)
+  ethUrl.searchParams.set('module', 'account')
+  ethUrl.searchParams.set('action', 'txlist')
+  ethUrl.searchParams.set('address', address)
+  ethUrl.searchParams.set('sort', 'desc')
+  ethUrl.searchParams.set('apikey', apiKey)
+
+  // Internal ETH transactions (from contract calls like fee splits)
+  const internalUrl = new URL(BASESCAN_API)
+  internalUrl.searchParams.set('chainid', CHAIN_ID)
+  internalUrl.searchParams.set('module', 'account')
+  internalUrl.searchParams.set('action', 'txlistinternal')
+  internalUrl.searchParams.set('address', address)
+  internalUrl.searchParams.set('sort', 'desc')
+  internalUrl.searchParams.set('apikey', apiKey)
+
+  // ERC-20 token transactions
+  const tokenUrl = new URL(BASESCAN_API)
+  tokenUrl.searchParams.set('chainid', CHAIN_ID)
+  tokenUrl.searchParams.set('module', 'account')
+  tokenUrl.searchParams.set('action', 'tokentx')
+  tokenUrl.searchParams.set('address', address)
+  tokenUrl.searchParams.set('sort', 'desc')
+  tokenUrl.searchParams.set('apikey', apiKey)
+
+  const [ethRes, internalRes, tokenRes] = await Promise.allSettled([
+    fetch(ethUrl.toString(), { next: { revalidate: 30 } }).then((r) => r.json()),
+    fetch(internalUrl.toString(), { next: { revalidate: 30 } }).then((r) => r.json()),
+    fetch(tokenUrl.toString(), { next: { revalidate: 30 } }).then((r) => r.json()),
+  ])
+
+  let ethTxs: UnifiedTx[] = []
+  if (ethRes.status === 'fulfilled' && ethRes.value.status === '1') {
+    ethTxs = mapTxs(ethRes.value.result, address)
+  }
+
+  let internalTxs: UnifiedTx[] = []
+  if (internalRes.status === 'fulfilled' && internalRes.value.status === '1') {
+    internalTxs = mapTxs(internalRes.value.result, address)
+  }
+
+  let erc20Txs: UnifiedTx[] = []
+  if (tokenRes.status === 'fulfilled' && tokenRes.value.status === '1') {
+    erc20Txs = mapTokenTxs(tokenRes.value.result, address)
+  }
+
+  return mergeTxLists(internalTxs, ethTxs, erc20Txs)
+}
+
+// GET /api/tx/[address] — fetch transaction history (with DB cache when available)
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ address: string }> }
 ) {
   // Rate limiting
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  const { allowed, retryAfter } = limiter.check(ip)
+  const { allowed, retryAfter } = await limiter.check(ip)
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests' },
@@ -101,64 +167,60 @@ export async function GET(
   }
 
   const { address } = await params
-  const apiKey = process.env.BASESCAN_API_KEY ?? ''
 
   if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
     return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
   }
 
+  // Fallback: no DATABASE_URL → call Basescan directly (original behavior)
+  if (!isDatabaseConfigured()) {
+    try {
+      const transactions = await fetchFromBasescan(address)
+      return NextResponse.json({ transactions })
+    } catch {
+      return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
+    }
+  }
+
+  // --- Database-backed cache path ---
+
+  // Probabilistic cleanup: ~1% of requests
+  if (Math.random() < 0.01) {
+    cleanupStaleTransactions().catch(() => {/* fire-and-forget */})
+  }
+
   try {
-    // Normal ETH transactions
-    const ethUrl = new URL(BASESCAN_API)
-    ethUrl.searchParams.set('chainid', CHAIN_ID)
-    ethUrl.searchParams.set('module', 'account')
-    ethUrl.searchParams.set('action', 'txlist')
-    ethUrl.searchParams.set('address', address)
-    ethUrl.searchParams.set('sort', 'desc')
-    ethUrl.searchParams.set('apikey', apiKey)
-
-    // Internal ETH transactions (from contract calls like fee splits)
-    const internalUrl = new URL(BASESCAN_API)
-    internalUrl.searchParams.set('chainid', CHAIN_ID)
-    internalUrl.searchParams.set('module', 'account')
-    internalUrl.searchParams.set('action', 'txlistinternal')
-    internalUrl.searchParams.set('address', address)
-    internalUrl.searchParams.set('sort', 'desc')
-    internalUrl.searchParams.set('apikey', apiKey)
-
-    // ERC-20 token transactions
-    const tokenUrl = new URL(BASESCAN_API)
-    tokenUrl.searchParams.set('chainid', CHAIN_ID)
-    tokenUrl.searchParams.set('module', 'account')
-    tokenUrl.searchParams.set('action', 'tokentx')
-    tokenUrl.searchParams.set('address', address)
-    tokenUrl.searchParams.set('sort', 'desc')
-    tokenUrl.searchParams.set('apikey', apiKey)
-
-    const [ethRes, internalRes, tokenRes] = await Promise.allSettled([
-      fetch(ethUrl.toString(), { next: { revalidate: 30 } }).then((r) => r.json()),
-      fetch(internalUrl.toString(), { next: { revalidate: 30 } }).then((r) => r.json()),
-      fetch(tokenUrl.toString(), { next: { revalidate: 30 } }).then((r) => r.json()),
-    ])
-
-    let ethTxs: UnifiedTx[] = []
-    if (ethRes.status === 'fulfilled' && ethRes.value.status === '1') {
-      ethTxs = mapTxs(ethRes.value.result, address)
+    // 1. Check fresh cache (≤ 5 minutes)
+    const cached = await getCachedTransactions(address, CHAIN_ID_NUM)
+    if (cached) {
+      return NextResponse.json({ transactions: cached })
     }
 
-    let internalTxs: UnifiedTx[] = []
-    if (internalRes.status === 'fulfilled' && internalRes.value.status === '1') {
-      internalTxs = mapTxs(internalRes.value.result, address)
-    }
+    // 2. Cache stale/missing → fetch from Basescan
+    try {
+      const transactions = await fetchFromBasescan(address)
 
-    let erc20Txs: UnifiedTx[] = []
-    if (tokenRes.status === 'fulfilled' && tokenRes.value.status === '1') {
-      erc20Txs = mapTokenTxs(tokenRes.value.result, address)
-    }
+      // Upsert results into DB (fire-and-forget to not block response)
+      upsertTransactions(transactions, CHAIN_ID_NUM).catch(() => {/* best-effort */})
 
-    const transactions = mergeTxLists(internalTxs, ethTxs, erc20Txs)
-    return NextResponse.json({ transactions })
+      return NextResponse.json({ transactions })
+    } catch {
+      // 3. Basescan failed → try stale cache as fallback (graceful degradation)
+      const stale = await getCachedTransactions(address, CHAIN_ID_NUM, STALE_CACHE_MAX_AGE_MS)
+      if (stale) {
+        return NextResponse.json({ transactions: stale })
+      }
+
+      // 4. No cache at all → 500
+      return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
+    }
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
+    // DB itself failed — fall back to direct Basescan call
+    try {
+      const transactions = await fetchFromBasescan(address)
+      return NextResponse.json({ transactions })
+    } catch {
+      return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
+    }
   }
 }
