@@ -4,7 +4,7 @@ import { CreateLinkRequestSchema, validateChainId, validatePaymentLink } from '@
 import { signPaymentLink } from '@/lib/hmac'
 import { createRateLimiter } from '@/lib/rate-limit'
 import { isDatabaseConfigured, getDb } from '@/lib/db'
-import { paymentLinks } from '@/lib/schema'
+import { paymentLinks, users } from '@/lib/schema'
 import { count, eq } from 'drizzle-orm'
 
 const limiter = createRateLimiter(20, 60_000)
@@ -107,7 +107,16 @@ export async function POST(req: NextRequest) {
           memo: memo || null,
           expiresAt: validated.expiresAt ? new Date(validated.expiresAt) : null,
           signature: signature,
+        }).onConflictDoUpdate({
+          target: paymentLinks.linkId,
+          set: { updatedAt: new Date() },
         })
+
+        // Fire-and-forget user upsert — don't block the response
+        db.insert(users)
+          .values({ address: validated.address, lastSeen: new Date() })
+          .onConflictDoUpdate({ target: users.address, set: { lastSeen: new Date() } })
+          .catch(() => {})
       } catch {
         return NextResponse.json(
           { error: 'Failed to create payment link' },
