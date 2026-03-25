@@ -68,8 +68,8 @@ const paymentLinkRowArb: fc.Arbitrary<PaymentLinkRow> = fc.record({
   viewCount: fc.nat({ max: 10000 }),
   payCount: fc.nat({ max: 10000 }),
   isActive: fc.boolean(),
-  createdAt: fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31') }),
-  updatedAt: fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31') }),
+  createdAt: fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31'), noInvalidDate: true }),
+  updatedAt: fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31'), noInvalidDate: true }),
 })
 
 // --- Dashboard query simulation ---

@@ -27,5 +27,23 @@ export default defineConfig({
       url: "https://sepolia.base.org",
       accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
     },
+    base: {
+      type: "http",
+      chainType: "l1",
+      url: "https://mainnet.base.org",
+      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
+    },
+    optimism: {
+      type: "http",
+      chainType: "l1",
+      url: "https://mainnet.optimism.io",
+      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
+    },
+    arbitrumOne: {
+      type: "http",
+      chainType: "l1",
+      url: "https://arb1.arbitrum.io/rpc",
+      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
+    },
   },
 });

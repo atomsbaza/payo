@@ -9,7 +9,7 @@ import { QRDisplay } from '@/components/QRDisplay'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/context/LangContext'
-import { getChain } from '@/lib/chainRegistry'
+import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
 import { validateEthAddress } from '@/lib/addressValidation'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
 import { calculateFiatValue } from '@/lib/fiatCalc'
@@ -26,7 +26,7 @@ export default function CreatePage() {
   const { t, lang } = useLang()
 
   const [recipientAddress, setRecipientAddress] = useState('')
-  const [chainId, setChainId] = useState<number>(84532)
+  const [chainId, setChainId] = useState<number>(getDefaultChainId())
   const [token, setToken] = useState('ETH')
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')

@@ -4,9 +4,12 @@
  * and the ABI for interacting with the contract via viem/wagmi.
  */
 
-/** Deployed CryptoPayLinkFee contract address */
-export const CRYPTO_PAY_LINK_ADDRESS = process.env
-  .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+import { getContractAddress } from './contractRegistry'
+
+export { getContractAddress } from './contractRegistry'
+
+/** Deployed CryptoPayLinkFee contract address (backward compat — default chain 84532) */
+export const CRYPTO_PAY_LINK_ADDRESS = getContractAddress(84532);
 
 /** Company wallet that receives fee portions of every payment */
 export const COMPANY_WALLET = process.env

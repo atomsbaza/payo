@@ -133,3 +133,55 @@ export function aggregateFeeTotals(txs: FeeTx[]): { totals: Record<string, bigin
   }
   return { totals, count: txs.length }
 }
+
+// --- Consolidated USD types and function ---
+
+export type TokenTotal = {
+  token: string
+  rawTotal: bigint
+  decimals: number
+}
+
+export type PriceMap = Record<string, number | null>
+
+export type ConsolidatedUsdResult = {
+  total: number
+  excludedTokens: string[]
+  hasAnyPrice: boolean
+}
+
+export function computeConsolidatedUsd(
+  tokenTotals: TokenTotal[],
+  prices: PriceMap
+): ConsolidatedUsdResult {
+  let total = 0
+  const excludedTokens: string[] = []
+
+  for (const { token, rawTotal, decimals } of tokenTotals) {
+    const price = prices[token] ?? null
+    if (price === null) {
+      excludedTokens.push(token)
+      continue
+    }
+    const formatted = parseFloat(formatUnits(rawTotal, decimals))
+    total += formatted * price
+  }
+
+  return {
+    total,
+    excludedTokens,
+    hasAnyPrice: excludedTokens.length < tokenTotals.length,
+  }
+}
+
+// --- Task 1.2: formatUsdValue ---
+
+export function formatUsdValue(
+  amount: number,
+  locale: 'th-TH' | 'en-US'
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount)
+}

@@ -195,6 +195,18 @@ export const translations = {
     demoTryReal: 'สร้าง Payment Link จริง →',
     demoGoHome: 'กลับหน้าแรก',
     demoTxHash: 'TX Hash (จำลอง)',
+
+    // Social Share Buttons
+    shareViaLine: 'LINE',
+    shareViaWhatsApp: 'WhatsApp',
+    shareViaTelegram: 'Telegram',
+    shareMessage: (url: string) => `จ่ายเงินผ่าน Payo: ${url}`,
+    shareMessageText: 'จ่ายเงินผ่าน Payo',
+
+    // Consolidated USD Card
+    consolidatedUsdReceived: 'ยอดรวม USD ที่ได้รับ',
+    consolidatedUsdSent: 'ยอดรวม USD ที่ส่ง',
+    consolidatedPartialNote: (tokens: string) => `ไม่รวม ${tokens} (ไม่มีราคา)`,
   },
 
   en: {
@@ -393,6 +405,18 @@ export const translations = {
     demoTryReal: 'Create a Real Payment Link →',
     demoGoHome: 'Go Home',
     demoTxHash: 'TX Hash (simulated)',
+
+    // Social Share Buttons
+    shareViaLine: 'LINE',
+    shareViaWhatsApp: 'WhatsApp',
+    shareViaTelegram: 'Telegram',
+    shareMessage: (url: string) => `Pay via Payo: ${url}`,
+    shareMessageText: 'Pay via Payo',
+
+    // Consolidated USD Card
+    consolidatedUsdReceived: 'Total USD Received',
+    consolidatedUsdSent: 'Total USD Sent',
+    consolidatedPartialNote: (tokens: string) => `Excludes ${tokens} (price unavailable)`,
   },
 }
 

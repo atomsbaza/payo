@@ -24,7 +24,8 @@ import {
   getVisibleTabs,
   aggregateFeeTotals,
 } from './aggregation'
-import type { DashboardTab } from './aggregation'
+import type { DashboardTab, TokenTotal } from './aggregation'
+import ConsolidatedUsdCard from './ConsolidatedUsdCard'
 import type { UnifiedTx } from '@/app/api/tx/[address]/route'
 import type { FeeTx } from '@/app/api/fees/[address]/route'
 
@@ -78,6 +79,24 @@ export default function DashboardPage() {
   /** 5.5 — Daily chart data */
   const dailyData = useMemo(() => aggregateByDay(filteredTxs), [filteredTxs])
   const maxTotal = dailyData.reduce((m, d) => d.total > m ? d.total : m, 0n)
+
+  /** Consolidated USD — received token totals */
+  const receivedTokenTotals: TokenTotal[] = useMemo(() => {
+    const totals = aggregateTotals(filteredTxs)
+    return Object.entries(totals).map(([token, rawTotal]) => {
+      const decimals = token === 'ETH' ? 18 : token === 'cbBTC' ? 8 : (txHistory.find(tx => tx.tokenSymbol === token)?.tokenDecimal ? parseInt(txHistory.find(tx => tx.tokenSymbol === token)!.tokenDecimal!) : 18)
+      return { token, rawTotal, decimals }
+    })
+  }, [filteredTxs, txHistory])
+
+  /** Consolidated USD — sent token totals */
+  const sentTokenTotals: TokenTotal[] = useMemo(() => {
+    const totals = aggregateSentTotals(filteredTxs)
+    return Object.entries(totals).map(([token, rawTotal]) => {
+      const decimals = token === 'ETH' ? 18 : token === 'cbBTC' ? 8 : (txHistory.find(tx => tx.tokenSymbol === token)?.tokenDecimal ? parseInt(txHistory.find(tx => tx.tokenSymbol === token)!.tokenDecimal!) : 18)
+      return { token, rawTotal, decimals }
+    })
+  }, [filteredTxs, txHistory])
 
   useEffect(() => {
     setMyLinks(getValidatedLinks())
@@ -598,6 +617,9 @@ export default function DashboardPage() {
                       />
                     </div>
 
+                    {/* Consolidated USD — Received */}
+                    <ConsolidatedUsdCard direction="received" tokenTotals={receivedTokenTotals} loading={txLoading} />
+
                     {/* 5.1 + 5.2 — Received totals (using filteredTxs) */}
                     {(() => {
                       const totals = aggregateTotals(filteredTxs)
@@ -617,6 +639,9 @@ export default function DashboardPage() {
                         )
                       })
                     })()}
+
+                    {/* Consolidated USD — Sent */}
+                    <ConsolidatedUsdCard direction="sent" tokenTotals={sentTokenTotals} loading={txLoading} />
 
                     {/* 5.3 — Sent Totals card */}
                     {(() => {

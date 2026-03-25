@@ -8,83 +8,115 @@ import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load .env.local
-const envPath = resolve(__dirname, "../.env.local");
-const envContent = readFileSync(envPath, "utf-8");
-const env: Record<string, string> = {};
-for (const line of envContent.split("\n")) {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith("#")) continue;
-  const [key, ...rest] = trimmed.split("=");
-  env[key] = rest.join("=").replace(/^["']|["']$/g, "");
+// --- Exported for testing (Property 6) ---
+
+export const NETWORKS: Record<string, { id: number; name: string; rpcUrl: string }> = {
+  baseSepolia: { id: 84532, name: "Base Sepolia", rpcUrl: "https://sepolia.base.org" },
+  base:        { id: 8453,  name: "Base Mainnet", rpcUrl: "https://mainnet.base.org" },
+  optimism:    { id: 10,    name: "Optimism",     rpcUrl: "https://mainnet.optimism.io" },
+  arbitrumOne: { id: 42161, name: "Arbitrum One", rpcUrl: "https://arb1.arbitrum.io/rpc" },
+};
+
+export function getNetworkConfig(networkName: string) {
+  return NETWORKS[networkName];
 }
 
-const PRIVATE_KEY = env.DEPLOYER_PRIVATE_KEY;
-if (!PRIVATE_KEY) {
-  console.error("Missing DEPLOYER_PRIVATE_KEY in .env.local");
-  process.exit(1);
-}
+// --- CLI entry point ---
+// Only run deploy logic when executed directly (not when imported for tests)
 
-const baseSepolia = defineChain({
-  id: 84532,
-  name: "Base Sepolia",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://sepolia.base.org"] } },
-});
+const isDirectRun = process.argv[1]?.includes("deploy");
 
-async function main() {
-  const companyWallet = "0x8E21cAb519316324B36CE0b9b43E76a578Afd1b0";
-  const feeRate = 100; // 1% in basis points
-
-  const account = privateKeyToAccount(`0x${PRIVATE_KEY.replace(/^0x/, "")}`);
-  console.log("Deployer:", account.address);
-
-  const walletClient = createWalletClient({
-    account,
-    chain: baseSepolia,
-    transport: http(),
-  });
-
-  const publicClient = createPublicClient({
-    chain: baseSepolia,
-    transport: http(),
-  });
-
-  // Read compiled artifact
-  const artifactPath = resolve(
-    __dirname,
-    "../artifacts/contracts/CryptoPayLinkFee.sol/CryptoPayLinkFee.json"
-  );
-  let artifact;
-  try {
-    artifact = JSON.parse(readFileSync(artifactPath, "utf-8"));
-  } catch {
-    console.error("Contract not compiled. Run: npx hardhat compile");
+if (isDirectRun) {
+  const networkName = process.argv[2];
+  if (!networkName || !NETWORKS[networkName]) {
+    console.error("Usage: npx tsx scripts/deploy.ts <network>");
+    console.error("Available networks:", Object.keys(NETWORKS).join(", "));
     process.exit(1);
   }
 
-  console.log("Deploying CryptoPayLinkFee...");
-  console.log("  Company wallet:", companyWallet);
-  console.log("  Fee rate:", feeRate, "bp (1%)");
+  const network = NETWORKS[networkName];
 
-  const hash = await walletClient.deployContract({
-    abi: artifact.abi,
-    bytecode: artifact.bytecode as `0x${string}`,
-    args: [companyWallet, feeRate],
+  // Load .env.local
+  const envPath = resolve(__dirname, "../.env.local");
+  const envContent = readFileSync(envPath, "utf-8");
+  const env: Record<string, string> = {};
+  for (const line of envContent.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const [key, ...rest] = trimmed.split("=");
+    env[key] = rest.join("=").replace(/^["']|["']$/g, "");
+  }
+
+  const PRIVATE_KEY = env.DEPLOYER_PRIVATE_KEY;
+  if (!PRIVATE_KEY) {
+    console.error("Missing DEPLOYER_PRIVATE_KEY in .env.local");
+    process.exit(1);
+  }
+
+  // Build chain definition from NETWORKS map
+  const chain = defineChain({
+    id: network.id,
+    name: network.name,
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: { default: { http: [network.rpcUrl] } },
   });
 
-  console.log("Tx hash:", hash);
-  console.log("Waiting for confirmation...");
+  async function main() {
+    const companyWallet = "0x8E21cAb519316324B36CE0b9b43E76a578Afd1b0";
+    const feeRate = 100; // 1% in basis points
 
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  const address = receipt.contractAddress;
+    const account = privateKeyToAccount(`0x${PRIVATE_KEY.replace(/^0x/, "")}`);
+    console.log("Deployer:", account.address);
+    console.log("Network:", network.name, `(chain ID: ${network.id})`);
 
-  console.log("\n✅ CryptoPayLinkFee deployed to:", address);
-  console.log("\nAdd this to your .env.local:");
-  console.log(`NEXT_PUBLIC_CONTRACT_ADDRESS=${address}`);
+    const walletClient = createWalletClient({
+      account,
+      chain,
+      transport: http(),
+    });
+
+    const publicClient = createPublicClient({
+      chain,
+      transport: http(),
+    });
+
+    // Read compiled artifact
+    const artifactPath = resolve(
+      __dirname,
+      "../artifacts/contracts/CryptoPayLinkFee.sol/CryptoPayLinkFee.json"
+    );
+    let artifact;
+    try {
+      artifact = JSON.parse(readFileSync(artifactPath, "utf-8"));
+    } catch {
+      console.error("Contract not compiled. Run: npx hardhat compile");
+      process.exit(1);
+    }
+
+    console.log("Deploying CryptoPayLinkFee...");
+    console.log("  Company wallet:", companyWallet);
+    console.log("  Fee rate:", feeRate, "bp (1%)");
+
+    const hash = await walletClient.deployContract({
+      abi: artifact.abi,
+      bytecode: artifact.bytecode as `0x${string}`,
+      args: [companyWallet, feeRate],
+    });
+
+    console.log("Tx hash:", hash);
+    console.log("Waiting for confirmation...");
+
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    const address = receipt.contractAddress;
+
+    console.log(`\n✅ CryptoPayLinkFee deployed to: ${address}`);
+    console.log(`   Chain: ${network.name} (ID: ${network.id})`);
+    console.log("\nAdd this to your .env.local:");
+    console.log(`NEXT_PUBLIC_CONTRACT_ADDRESS_${network.id}=${address}`);
+  }
+
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
-
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});

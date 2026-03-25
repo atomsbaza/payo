@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRateLimiter } from '@/lib/rate-limit'
+import { getChain } from '@/lib/chainRegistry'
 
 const BASESCAN_API = 'https://api.etherscan.io/v2/api'
-const CHAIN_ID = '84532' // Base Sepolia
 const limiter = createRateLimiter(10, 60_000)
 
 export type FeeTx = {
@@ -51,10 +51,20 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
   }
 
+  // Read chainId from query param, default to Base Sepolia
+  const chainIdParam = req.nextUrl.searchParams.get('chainId')
+  const chainId = chainIdParam ? Number(chainIdParam) : 84532
+
+  if (!getChain(chainId)) {
+    return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 })
+  }
+
+  const chainIdStr = String(chainId)
+
   try {
     // Build internal ETH txlist URL (fee payments from contract are internal txs)
     const internalUrl = new URL(BASESCAN_API)
-    internalUrl.searchParams.set('chainid', CHAIN_ID)
+    internalUrl.searchParams.set('chainid', chainIdStr)
     internalUrl.searchParams.set('module', 'account')
     internalUrl.searchParams.set('action', 'txlistinternal')
     internalUrl.searchParams.set('address', address)
@@ -63,7 +73,7 @@ export async function GET(
 
     // Build normal ETH txlist URL (direct transfers, fallback when no contract)
     const ethUrl = new URL(BASESCAN_API)
-    ethUrl.searchParams.set('chainid', CHAIN_ID)
+    ethUrl.searchParams.set('chainid', chainIdStr)
     ethUrl.searchParams.set('module', 'account')
     ethUrl.searchParams.set('action', 'txlist')
     ethUrl.searchParams.set('address', address)
@@ -72,7 +82,7 @@ export async function GET(
 
     // Build ERC-20 tokentx URL
     const tokenUrl = new URL(BASESCAN_API)
-    tokenUrl.searchParams.set('chainid', CHAIN_ID)
+    tokenUrl.searchParams.set('chainid', chainIdStr)
     tokenUrl.searchParams.set('module', 'account')
     tokenUrl.searchParams.set('action', 'tokentx')
     tokenUrl.searchParams.set('address', address)

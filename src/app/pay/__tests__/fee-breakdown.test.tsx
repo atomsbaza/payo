@@ -30,6 +30,7 @@ vi.mock('canvas-confetti', () => ({ default: vi.fn() }))
 
 // Mock contract config so contractReady is true in tests
 vi.mock('@/lib/contract', () => ({
+  getContractAddress: () => '0x0000000000000000000000000000000000000001' as `0x${string}`,
   CRYPTO_PAY_LINK_ADDRESS: '0x0000000000000000000000000000000000000001' as `0x${string}`,
   COMPANY_WALLET: '0x0000000000000000000000000000000000000002' as `0x${string}`,
   DEFAULT_FEE_RATE: 100n,

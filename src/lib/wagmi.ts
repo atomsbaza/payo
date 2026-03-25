@@ -1,11 +1,25 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { baseSepolia, mainnet } from 'wagmi/chains'
+import { baseSepolia, base, optimism, arbitrum } from 'wagmi/chains'
+import { getSupportedChains } from './chainRegistry'
+import type { Chain } from 'viem'
+
+// Map chain IDs to wagmi chain objects
+const WAGMI_CHAIN_MAP: Record<number, Chain> = {
+  84532: baseSepolia,
+  8453: base,
+  10: optimism,
+  42161: arbitrum,
+}
+
+const activeChains = getSupportedChains()
+  .map(c => WAGMI_CHAIN_MAP[c.chainId])
+  .filter(Boolean) as [Chain, ...Chain[]]
 
 export const config = getDefaultConfig({
   appName: 'Crypto Pay Link',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID',
-  chains: [baseSepolia, mainnet],
+  chains: activeChains,
   ssr: true,
 })
 
-export { baseSepolia as defaultChain }
+export { activeChains }

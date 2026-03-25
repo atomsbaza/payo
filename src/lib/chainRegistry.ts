@@ -37,10 +37,21 @@ const CHAINS: SupportedChain[] = [
   },
 ]
 
+export function isProduction(): boolean {
+  return process.env.NEXT_PUBLIC_APP_ENV === 'production'
+}
+
 export function getSupportedChains(): SupportedChain[] {
+  if (isProduction()) {
+    return CHAINS.filter(c => !c.isTestnet)
+  }
   return CHAINS
 }
 
 export function getChain(chainId: number): SupportedChain | undefined {
   return CHAINS.find(c => c.chainId === chainId)
+}
+
+export function getDefaultChainId(): number {
+  return isProduction() ? 8453 : 84532
 }

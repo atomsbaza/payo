@@ -11,9 +11,9 @@ import { validatePaymentLink } from '@/lib/validate'
 import { isSelfPayment } from '@/lib/self-payment'
 import { ERC20_ABI } from '@/lib/tokens'
 import { getToken } from '@/lib/tokenRegistry'
-import { getChain } from '@/lib/chainRegistry'
+import { getChain, isProduction } from '@/lib/chainRegistry'
 import { calculateFee, formatFeePercent } from '@/lib/fee'
-import { CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
+import { getContractAddress, CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { SuccessView } from '@/components/SuccessView'
 import { Navbar } from '@/components/Navbar'
@@ -62,6 +62,10 @@ export default function PayPage({ params }: Props) {
 
   const token = data ? getToken(data.chainId, data.token) : undefined
   const chain = data ? getChain(data.chainId) : undefined
+  const isTestnetInProd = isProduction() && chain?.isTestnet
+
+  // Resolve contract address for the payment link's chain (fallback to legacy constant)
+  const contractAddress = (data ? getContractAddress(data.chainId) : undefined) ?? CRYPTO_PAY_LINK_ADDRESS
 
   // Self-payment check
   const selfPayment = data ? isSelfPayment(address, data.address) : false
@@ -103,11 +107,11 @@ export default function PayPage({ params }: Props) {
     : null
 
   // Whether the fee contract is deployed and configured
-  const contractReady = !!CRYPTO_PAY_LINK_ADDRESS
+  const contractReady = !!contractAddress
 
   // Read fee rate from the deployed contract; fall back to DEFAULT_FEE_RATE on error
   const { data: contractFeeRate, isError: feeRateError } = useReadContract({
-    address: CRYPTO_PAY_LINK_ADDRESS,
+    address: contractAddress,
     abi: CryptoPayLinkFeeABI,
     functionName: 'feeRate',
     query: { enabled: contractReady },
@@ -231,7 +235,7 @@ export default function PayPage({ params }: Props) {
         // Use the fee contract
         if (token.address === 'native') {
           hash = await writeContractAsync({
-            address: CRYPTO_PAY_LINK_ADDRESS,
+            address: contractAddress!,
             abi: CryptoPayLinkFeeABI,
             functionName: 'payNative',
             args: [data.address as `0x${string}`, data.memo || ''],
@@ -239,7 +243,7 @@ export default function PayPage({ params }: Props) {
           })
         } else {
           hash = await writeContractAsync({
-            address: CRYPTO_PAY_LINK_ADDRESS,
+            address: contractAddress!,
             abi: CryptoPayLinkFeeABI,
             functionName: 'payToken',
             args: [
@@ -337,7 +341,19 @@ export default function PayPage({ params }: Props) {
         <>
         {/* Payment card */}
         <div className="bg-white/[0.03] ring-1 ring-white/10 rounded-2xl p-5 sm:p-6 mb-4 sm:mb-6">
-          {chain?.isTestnet && (
+          {isTestnetInProd && (
+            <div
+              role="alert"
+              data-testid="testnet-prod-warning"
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-center"
+            >
+              <p className="text-red-400 text-sm font-semibold">⚠️ Testnet Link</p>
+              <p className="text-red-400/80 text-xs mt-1">
+                This payment link uses a testnet chain ({chain?.name}). Testnet tokens have no real value.
+              </p>
+            </div>
+          )}
+          {chain?.isTestnet && !isTestnetInProd && (
             <div
               role="status"
               className="mb-3 text-center"

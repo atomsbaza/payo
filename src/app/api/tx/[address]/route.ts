@@ -6,10 +6,9 @@ import {
   upsertTransactions,
   cleanupStaleTransactions,
 } from '@/lib/tx-cache'
+import { getChain } from '@/lib/chainRegistry'
 
 const BASESCAN_API = 'https://api.etherscan.io/v2/api'
-const CHAIN_ID = '84532' // Base Sepolia
-const CHAIN_ID_NUM = 84532
 const STALE_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days for graceful degradation
 const limiter = createRateLimiter(10, 60_000)
 
@@ -97,12 +96,12 @@ function mapTokenTxs(
  * Fetch transactions from Basescan API (ETH + internal + ERC-20).
  * Returns merged UnifiedTx[] or throws on failure.
  */
-async function fetchFromBasescan(address: string): Promise<UnifiedTx[]> {
+async function fetchFromBasescan(address: string, chainIdStr: string): Promise<UnifiedTx[]> {
   const apiKey = process.env.BASESCAN_API_KEY ?? ''
 
   // Normal ETH transactions
   const ethUrl = new URL(BASESCAN_API)
-  ethUrl.searchParams.set('chainid', CHAIN_ID)
+  ethUrl.searchParams.set('chainid', chainIdStr)
   ethUrl.searchParams.set('module', 'account')
   ethUrl.searchParams.set('action', 'txlist')
   ethUrl.searchParams.set('address', address)
@@ -111,7 +110,7 @@ async function fetchFromBasescan(address: string): Promise<UnifiedTx[]> {
 
   // Internal ETH transactions (from contract calls like fee splits)
   const internalUrl = new URL(BASESCAN_API)
-  internalUrl.searchParams.set('chainid', CHAIN_ID)
+  internalUrl.searchParams.set('chainid', chainIdStr)
   internalUrl.searchParams.set('module', 'account')
   internalUrl.searchParams.set('action', 'txlistinternal')
   internalUrl.searchParams.set('address', address)
@@ -120,7 +119,7 @@ async function fetchFromBasescan(address: string): Promise<UnifiedTx[]> {
 
   // ERC-20 token transactions
   const tokenUrl = new URL(BASESCAN_API)
-  tokenUrl.searchParams.set('chainid', CHAIN_ID)
+  tokenUrl.searchParams.set('chainid', chainIdStr)
   tokenUrl.searchParams.set('module', 'account')
   tokenUrl.searchParams.set('action', 'tokentx')
   tokenUrl.searchParams.set('address', address)
@@ -172,10 +171,20 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
   }
 
+  // Read chainId from query param with backward-compatible default
+  const chainIdParam = req.nextUrl.searchParams.get('chainId')
+  const chainIdNum = chainIdParam ? Number(chainIdParam) : 84532
+
+  if (!getChain(chainIdNum)) {
+    return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 })
+  }
+
+  const chainIdStr = String(chainIdNum)
+
   // Fallback: no DATABASE_URL → call Basescan directly (original behavior)
   if (!isDatabaseConfigured()) {
     try {
-      const transactions = await fetchFromBasescan(address)
+      const transactions = await fetchFromBasescan(address, chainIdStr)
       return NextResponse.json({ transactions })
     } catch {
       return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
@@ -191,22 +200,22 @@ export async function GET(
 
   try {
     // 1. Check fresh cache (≤ 5 minutes)
-    const cached = await getCachedTransactions(address, CHAIN_ID_NUM)
+    const cached = await getCachedTransactions(address, chainIdNum)
     if (cached) {
       return NextResponse.json({ transactions: cached })
     }
 
     // 2. Cache stale/missing → fetch from Basescan
     try {
-      const transactions = await fetchFromBasescan(address)
+      const transactions = await fetchFromBasescan(address, chainIdStr)
 
       // Upsert results into DB (fire-and-forget to not block response)
-      upsertTransactions(transactions, CHAIN_ID_NUM).catch(() => {/* best-effort */})
+      upsertTransactions(transactions, chainIdNum).catch(() => {/* best-effort */})
 
       return NextResponse.json({ transactions })
     } catch {
       // 3. Basescan failed → try stale cache as fallback (graceful degradation)
-      const stale = await getCachedTransactions(address, CHAIN_ID_NUM, STALE_CACHE_MAX_AGE_MS)
+      const stale = await getCachedTransactions(address, chainIdNum, STALE_CACHE_MAX_AGE_MS)
       if (stale) {
         return NextResponse.json({ transactions: stale })
       }
@@ -217,7 +226,7 @@ export async function GET(
   } catch {
     // DB itself failed — fall back to direct Basescan call
     try {
-      const transactions = await fetchFromBasescan(address)
+      const transactions = await fetchFromBasescan(address, chainIdStr)
       return NextResponse.json({ transactions })
     } catch {
       return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 })
