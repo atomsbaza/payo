@@ -26,6 +26,7 @@ export const paymentLinks = pgTable('payment_links', {
   signature:     text('signature').notNull(),
   viewCount:     integer('view_count').notNull().default(0),
   payCount:      integer('pay_count').notNull().default(0),
+  singleUse:     boolean('single_use').notNull().default(false),
   isActive:      boolean('is_active').notNull().default(true),
   deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
   createdAt:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -46,6 +46,7 @@ export default function PayPage({ params }: Props) {
   const [pollStartTime, setPollStartTime] = useState<number>(0)
   const [pollTimedOut, setPollTimedOut] = useState(false)
   const [feeExpanded, setFeeExpanded] = useState(false)
+  const [linkDeactivated, setLinkDeactivated] = useState(false)
 
   const data = isDemoLink(id) ? DEMO_PAYMENT_DATA : decodePaymentLink(id)
 
@@ -81,6 +82,9 @@ export default function PayPage({ params }: Props) {
       .then((res) => {
         setHmacVerified(res.verified ?? false)
         setTampered(res.tampered ?? true)
+        if (res.isActive === false) {
+          setLinkDeactivated(true)
+        }
       })
       .catch(() => {
         setHmacVerified(false)
@@ -202,6 +206,22 @@ export default function PayPage({ params }: Props) {
           <p className="text-6xl mb-4">⏰</p>
           <h1 className="text-xl font-bold mb-2">{t.expiredLink}</h1>
           <p className="text-gray-400">{t.expiredLinkDesc(expiredDate)}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Blocked screen for deactivated (single-use) links
+  if (linkDeactivated) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-6xl mb-4">🔒</p>
+          <h1 className="text-xl font-bold mb-2">{t.linkUsedTitle}</h1>
+          <p className="text-gray-400 mb-6">{t.linkUsedDesc}</p>
+          <a href="/" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm">
+            {t.tamperedGoHome}
+          </a>
         </div>
       </div>
     )

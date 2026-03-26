@@ -56,4 +56,5 @@ export const CreateLinkRequestSchema = z.object({
   memo: z.string().default(''),
   chainId: z.number().default(84532),
   expiresAt: z.number().optional(),
+  singleUse: z.boolean().default(false),
 })

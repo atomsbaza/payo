@@ -31,6 +31,7 @@ export default function CreatePage() {
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
   const [expiryDays, setExpiryDays] = useState('0')
+  const [singleUse, setSingleUse] = useState(false)
   const [saved, setSaved] = useState(false)
   const [savedUrl, setSavedUrl] = useState('')
   const [createError, setCreateError] = useState('')
@@ -95,6 +96,7 @@ export default function CreatePage() {
           memo: memo.trim(),
           chainId,
           ...(expiresAt ? { expiresAt } : {}),
+          singleUse,
         }),
       })
 
@@ -108,7 +110,7 @@ export default function CreatePage() {
       setSavedUrl(url)
 
       const existing = JSON.parse(localStorage.getItem('myLinks') ?? '[]')
-      const newLink = { url, address: target, token, amount, memo, createdAt: Date.now() }
+      const newLink = { url, address: target, token, amount, memo, createdAt: Date.now(), singleUse, payCount: 0 }
       localStorage.setItem('myLinks', JSON.stringify([newLink, ...existing].slice(0, 50)))
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -246,6 +248,29 @@ export default function CreatePage() {
             {expiryLabel && (
               <p className="text-xs text-amber-400 mt-2">⏰ {expiryLabel}</p>
             )}
+          </div>
+
+          {/* Single-use toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-300">
+                {t.labelSingleUse}
+              </label>
+              <p className="text-xs text-gray-500 mt-0.5">{t.singleUseHint}</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={singleUse}
+              onClick={() => setSingleUse(!singleUse)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                singleUse ? 'bg-indigo-600' : 'bg-white/10'
+              }`}
+            >
+              <span className={`block w-5 h-5 bg-white rounded-full transition-transform ${
+                singleUse ? 'translate-x-5' : 'translate-x-0.5'
+              }`} />
+            </button>
           </div>
         </div>
 

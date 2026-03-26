@@ -28,7 +28,7 @@ vi.mock('@/context/LangContext', () => ({
     t: {
       brand: '⚡ Crypto Pay Link',
       navHome: 'Home',
-      navCreateLink: '+ Create Link',
+      navCreateLink: 'Create Link',
       navCompanyDashboard: 'Dashboard',
     },
     toggleLang: () => {},

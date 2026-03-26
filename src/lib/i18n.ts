@@ -207,13 +207,21 @@ export const translations = {
     consolidatedUsdReceived: 'ยอดรวม USD ที่ได้รับ',
     consolidatedUsdSent: 'ยอดรวม USD ที่ส่ง',
     consolidatedPartialNote: (tokens: string) => `ไม่รวม ${tokens} (ไม่มีราคา)`,
+
+    // Single-use Link (Invoice Mode)
+    labelSingleUse: 'ใช้ครั้งเดียว (Invoice)',
+    singleUseHint: 'ลิงก์จะ deactivate อัตโนมัติหลังจ่ายครั้งแรก',
+    linkUsedTitle: 'ลิงก์นี้ถูกใช้แล้ว',
+    linkUsedDesc: 'Payment link นี้ถูกใช้ชำระเงินแล้ว ไม่สามารถใช้ซ้ำได้',
+    badgeInvoice: 'ใบแจ้งหนี้',
+    badgePaid: 'จ่ายแล้ว ✓',
   },
 
   en: {
     // Navbar
     brand: 'Payo',
     navDashboard: 'Dashboard',
-    navCreateLink: '+ Create Link',
+    navCreateLink: 'Create Link',
 
     // Create page
     createTitle: 'Create Payment Link',
@@ -417,6 +425,14 @@ export const translations = {
     consolidatedUsdReceived: 'Total USD Received',
     consolidatedUsdSent: 'Total USD Sent',
     consolidatedPartialNote: (tokens: string) => `Excludes ${tokens} (price unavailable)`,
+
+    // Single-use Link (Invoice Mode)
+    labelSingleUse: 'Single-use (Invoice)',
+    singleUseHint: 'Link will auto-deactivate after first payment',
+    linkUsedTitle: 'This link has been used',
+    linkUsedDesc: 'This payment link has already been used and cannot accept further payments.',
+    badgeInvoice: 'Invoice',
+    badgePaid: 'Paid ✓',
   },
 }
 

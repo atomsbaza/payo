@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
           memo: memo || null,
           expiresAt: validated.expiresAt ? new Date(validated.expiresAt) : null,
           signature: signature,
+          singleUse: validated.singleUse ?? false,
         }).onConflictDoUpdate({
           target: paymentLinks.linkId,
           set: { updatedAt: new Date() },
