@@ -36,10 +36,15 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const hamburgerRef = useRef<HTMLButtonElement>(null)
   const firstLinkRef = useRef<HTMLAnchorElement>(null)
+  const prevPathname = useRef(pathname)
 
-  // Auto-close on route change
+  // Auto-close on route change — legitimate sync of external navigation state
   useEffect(() => {
-    setIsMenuOpen(false)
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing menu state with external navigation
+      setIsMenuOpen(false)
+    }
   }, [pathname])
 
   // Auto-close on viewport change to desktop

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode } from 'react'
 import { translations, Lang, Translations } from '@/lib/i18n'
 
 type LangContextType = {
@@ -15,13 +15,16 @@ const LangContext = createContext<LangContextType>({
   toggleLang: () => {},
 })
 
-export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('th')
-
-  useEffect(() => {
+function getInitialLang(): Lang {
+  if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('lang') as Lang | null
-    if (saved === 'th' || saved === 'en') setLang(saved)
-  }, [])
+    if (saved === 'th' || saved === 'en') return saved
+  }
+  return 'th'
+}
+
+export function LangProvider({ children }: { children: ReactNode }) {
+  const [lang, setLang] = useState<Lang>(getInitialLang)
 
   const toggleLang = () => {
     setLang(prev => {

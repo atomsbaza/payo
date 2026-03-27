@@ -21,6 +21,9 @@ const EXPIRY_OPTIONS = [
   { value: '30', labelKey: 'expiry30d' as const },
 ]
 
+// Capture page load time at module level — used for expiry preview calculations
+const PAGE_LOAD_TIME = typeof window !== 'undefined' ? Date.now() : 0
+
 export default function CreatePage() {
   const { address, isConnected } = useAccount()
   const { t, lang } = useLang()
@@ -41,7 +44,7 @@ export default function CreatePage() {
     const target = recipientAddress.trim()
     if (!target || target.length < 10) return ''
     const expiresAt = expiryDays !== '0'
-      ? Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000
+      ? PAGE_LOAD_TIME + Number(expiryDays) * 24 * 60 * 60 * 1000
       : undefined
     const encoded = encodePaymentLink({
       address: target,
@@ -52,7 +55,7 @@ export default function CreatePage() {
       ...(expiresAt ? { expiresAt } : {}),
     })
     return `${typeof window !== 'undefined' ? window.location.origin : ''}/pay/${encoded}`
-  }, [recipientAddress, token, amount, memo, expiryDays])
+  }, [recipientAddress, token, amount, memo, expiryDays, chainId])
 
   const addressValidation = useMemo(
     () => validateEthAddress(recipientAddress),
@@ -120,7 +123,7 @@ export default function CreatePage() {
   }
 
   const expiryLabel = expiryDays !== '0'
-    ? t.expiresOn(new Date(Date.now() + Number(expiryDays) * 86400000).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US'))
+    ? t.expiresOn(new Date(PAGE_LOAD_TIME + Number(expiryDays) * 86400000).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US'))
     : ''
 
   return (
