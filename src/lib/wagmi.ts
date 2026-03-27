@@ -1,4 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { coinbaseWallet } from 'wagmi/connectors'
 import { baseSepolia, base, optimism, arbitrum } from 'wagmi/chains'
 import { getSupportedChains } from './chainRegistry'
 import type { Chain } from 'viem'
@@ -20,6 +21,12 @@ export const config = getDefaultConfig({
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID',
   chains: activeChains,
   ssr: true,
+  wallets: [{
+    groupName: 'Popular',
+    wallets: [
+      coinbaseWallet({ preference: 'smartWalletOnly' }),
+    ],
+  }],
 })
 
 export { activeChains }
