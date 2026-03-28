@@ -10,6 +10,7 @@ import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { Navbar } from '@/components/Navbar'
 import { useLang } from '@/context/LangContext'
 import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
+import { getDefaultToken } from '@/lib/tokenRegistry'
 import { validateEthAddress } from '@/lib/addressValidation'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
 import { calculateFiatValue } from '@/lib/fiatCalc'
@@ -30,7 +31,7 @@ export default function CreatePage() {
 
   const [recipientAddress, setRecipientAddress] = useState('')
   const [chainId, setChainId] = useState<number>(getDefaultChainId())
-  const [token, setToken] = useState('ETH')
+  const [token, setToken] = useState(getDefaultToken(getDefaultChainId()))
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
   const [expiryDays, setExpiryDays] = useState('0')
@@ -182,7 +183,7 @@ export default function CreatePage() {
 
           {/* Chain */}
           <div>
-            <ChainSelector value={chainId} onChange={(id) => { setChainId(id); setToken('ETH'); setSaved(false) }} />
+            <ChainSelector value={chainId} onChange={(id) => { setChainId(id); setToken(getDefaultToken(id)); setSaved(false) }} />
           </div>
 
           {/* Token */}

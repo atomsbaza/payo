@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import * as fc from 'fast-check'
 import { render, cleanup, act } from '@testing-library/react'
 import { getSupportedChains, getChain } from '@/lib/chainRegistry'
-import { getTokensForChain, getToken } from '@/lib/tokenRegistry'
+import { getTokensForChain, getToken, getDefaultToken } from '@/lib/tokenRegistry'
 
 import { TokenSelector } from '../TokenSelector'
 
@@ -42,7 +42,7 @@ describe('TokenSelector — Unit Tests', () => {
     expect(buttons).toHaveLength(5)
   })
 
-  it('auto-resets to ETH when chain changes and selected token is unavailable', () => {
+  it('auto-resets to default token (USDC) when chain changes and selected token is unavailable', () => {
     // USDT exists on Base Mainnet (8453) but NOT on Base Sepolia (84532)
     const onChange = vi.fn()
     const { rerender } = render(
@@ -54,7 +54,7 @@ describe('TokenSelector — Unit Tests', () => {
       rerender(<TokenSelector value="USDT" onChange={onChange} chainId={84532} />)
     })
 
-    expect(onChange).toHaveBeenCalledWith('ETH')
+    expect(onChange).toHaveBeenCalledWith('USDC')
   })
 
   it('does NOT reset when chain changes and selected token is still available', () => {
@@ -128,15 +128,15 @@ describe('TokenSelector — Property 11: TokenSelector Shows Only Chain-Appropri
 // Task 13.3 — Property 12: Token Auto-Resets to ETH on Chain Change
 // ─────────────────────────────────────────────
 
-// Feature: token-chain-expansion, Property 12: Token Auto-Resets to ETH on Chain Change
-describe('TokenSelector — Property 12: Token Auto-Resets to ETH on Chain Change', () => {
+// Feature: token-chain-expansion, Property 12: Token Auto-Resets to Default on Chain Change
+describe('TokenSelector — Property 12: Token Auto-Resets to Default on Chain Change', () => {
   /**
    * **Validates: Requirements 4.5, 5.3, 6.6**
    *
    * When chainId changes and current token is absent on new chain,
-   * selected token becomes ETH.
+   * selected token becomes getDefaultToken(newChainId).
    */
-  it('auto-resets to ETH when chainId changes and current token is absent on new chain', () => {
+  it('auto-resets to default token when chainId changes and current token is absent on new chain', () => {
     const chains = getSupportedChains()
 
     // Generate a (fromChainId, toChainId) pair where a token exists on fromChain but NOT on toChain
@@ -178,8 +178,8 @@ describe('TokenSelector — Property 12: Token Auto-Resets to ETH on Chain Chang
           )
         })
 
-        // onChange must have been called with 'ETH'
-        expect(onChange).toHaveBeenCalledWith('ETH')
+        // onChange must have been called with the default token for the new chain
+        expect(onChange).toHaveBeenCalledWith(getDefaultToken(toChainId))
       }),
       { numRuns: 100 }
     )
