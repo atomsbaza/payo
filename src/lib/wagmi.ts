@@ -1,5 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { coinbaseWallet } from 'wagmi/connectors'
+import { coinbaseWallet } from '@rainbow-me/rainbowkit/wallets'
 import { baseSepolia, base, optimism, arbitrum } from 'wagmi/chains'
 import { getSupportedChains } from './chainRegistry'
 import type { Chain } from 'viem'
@@ -12,6 +12,10 @@ const WAGMI_CHAIN_MAP: Record<number, Chain> = {
   42161: arbitrum,
 }
 
+// Set smartWalletOnly preference before config creation
+// This ensures Coinbase Smart Wallet uses passkey/email flow
+coinbaseWallet.preference = 'smartWalletOnly'
+
 const activeChains = getSupportedChains()
   .map(c => WAGMI_CHAIN_MAP[c.chainId])
   .filter(Boolean) as [Chain, ...Chain[]]
@@ -23,9 +27,7 @@ export const config = getDefaultConfig({
   ssr: true,
   wallets: [{
     groupName: 'Popular',
-    wallets: [
-      coinbaseWallet({ preference: 'smartWalletOnly' }),
-    ],
+    wallets: [coinbaseWallet],
   }],
 })
 

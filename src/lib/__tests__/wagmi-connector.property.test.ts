@@ -13,9 +13,8 @@ import * as fc from 'fast-check'
  * Validates: Requirements 1.1, 1.4, 3.2
  */
 
-// Capture the args passed to getDefaultConfig and coinbaseWallet
+// Capture the args passed to getDefaultConfig
 let capturedDefaultConfigArgs: Record<string, unknown> | undefined
-let capturedCoinbaseWalletArgs: Record<string, unknown> | undefined
 
 // Mock RainbowKit's getDefaultConfig to capture its arguments
 vi.mock('@rainbow-me/rainbowkit', () => ({
@@ -25,18 +24,20 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   },
 }))
 
-// Mock wagmi/connectors to capture coinbaseWallet call args
-vi.mock('wagmi/connectors', () => ({
-  coinbaseWallet: (args: Record<string, unknown>) => {
-    capturedCoinbaseWalletArgs = args
-    return { _type: 'coinbase-wallet-connector', ...args }
-  },
+// Mock coinbaseWallet from @rainbow-me/rainbowkit/wallets
+// RainbowKit wallet is a callable function with a .preference property
+const mockCoinbaseWallet = Object.assign(
+  (opts: Record<string, unknown>) => ({ _type: 'coinbase-wallet', ...opts }),
+  { preference: undefined as string | undefined, _isMockWallet: true },
+)
+vi.mock('@rainbow-me/rainbowkit/wallets', () => ({
+  coinbaseWallet: mockCoinbaseWallet,
 }))
 
 describe('Feature: embedded-wallet, Property 1: Config includes coinbaseWallet connector with smartWalletOnly preference and preserves existing fields', () => {
   beforeEach(() => {
     capturedDefaultConfigArgs = undefined
-    capturedCoinbaseWalletArgs = undefined
+    mockCoinbaseWallet.preference = undefined
     vi.resetModules()
   })
 
@@ -58,7 +59,7 @@ describe('Feature: embedded-wallet, Property 1: Config includes coinbaseWallet c
     await fc.assert(
       fc.asyncProperty(fc.constant(true), async () => {
         capturedDefaultConfigArgs = undefined
-        capturedCoinbaseWalletArgs = undefined
+        mockCoinbaseWallet.preference = undefined
         vi.resetModules()
 
         const wagmiModule = await import('../wagmi')
@@ -74,9 +75,8 @@ describe('Feature: embedded-wallet, Property 1: Config includes coinbaseWallet c
         // Requirement 1.4: ssr preserved as true
         expect(capturedDefaultConfigArgs!.ssr).toBe(true)
 
-        // Requirement 1.1: coinbaseWallet connector is configured
-        expect(capturedCoinbaseWalletArgs).toBeDefined()
-        expect(capturedCoinbaseWalletArgs!.preference).toBe('smartWalletOnly')
+        // Requirement 1.1: coinbaseWallet preference set to smartWalletOnly
+        expect(mockCoinbaseWallet.preference).toBe('smartWalletOnly')
 
         // Requirement 1.1: wallets array includes the coinbase connector group
         const wallets = capturedDefaultConfigArgs!.wallets as Array<{
@@ -89,7 +89,7 @@ describe('Feature: embedded-wallet, Property 1: Config includes coinbaseWallet c
 
         const popularGroup = wallets.find(g => g.groupName === 'Popular')
         expect(popularGroup).toBeDefined()
-        expect(popularGroup!.wallets.length).toBeGreaterThan(0)
+        expect(popularGroup!.wallets).toContain(mockCoinbaseWallet)
       }),
       { numRuns: 100 },
     )

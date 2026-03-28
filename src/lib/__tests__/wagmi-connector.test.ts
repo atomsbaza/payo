@@ -5,9 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
  * Tests specific examples and edge cases for the embedded-wallet feature
  */
 
-// Capture args passed to getDefaultConfig and coinbaseWallet
+// Capture args passed to getDefaultConfig
 let capturedDefaultConfigArgs: Record<string, unknown> | undefined
-let capturedCoinbaseWalletArgs: Record<string, unknown> | undefined
 
 vi.mock('@rainbow-me/rainbowkit', () => ({
   getDefaultConfig: (args: Record<string, unknown>) => {
@@ -16,17 +15,19 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   },
 }))
 
-vi.mock('wagmi/connectors', () => ({
-  coinbaseWallet: (args: Record<string, unknown>) => {
-    capturedCoinbaseWalletArgs = args
-    return { _type: 'coinbase-wallet-connector', ...args }
-  },
+// Mock coinbaseWallet from @rainbow-me/rainbowkit/wallets
+const mockCoinbaseWallet = Object.assign(
+  (opts: Record<string, unknown>) => ({ _type: 'coinbase-wallet', ...opts }),
+  { preference: undefined as string | undefined, _isMockWallet: true },
+)
+vi.mock('@rainbow-me/rainbowkit/wallets', () => ({
+  coinbaseWallet: mockCoinbaseWallet,
 }))
 
 describe('wagmi connector unit tests', () => {
   beforeEach(() => {
     capturedDefaultConfigArgs = undefined
-    capturedCoinbaseWalletArgs = undefined
+    mockCoinbaseWallet.preference = undefined
     vi.resetModules()
   })
 
@@ -51,21 +52,14 @@ describe('wagmi connector unit tests', () => {
     expect(wallets).toBeDefined()
     expect(Array.isArray(wallets)).toBe(true)
 
-    // There should be a group containing the coinbase wallet connector
+    // There should be a group containing the coinbase wallet
     const groupWithCoinbase = wallets.find(g =>
-      g.wallets.some(
-        (w: unknown) =>
-          typeof w === 'object' &&
-          w !== null &&
-          '_type' in w &&
-          (w as Record<string, unknown>)._type === 'coinbase-wallet-connector',
-      ),
+      g.wallets.includes(mockCoinbaseWallet),
     )
     expect(groupWithCoinbase).toBeDefined()
 
-    // coinbaseWallet was called with smartWalletOnly preference
-    expect(capturedCoinbaseWalletArgs).toBeDefined()
-    expect(capturedCoinbaseWalletArgs!.preference).toBe('smartWalletOnly')
+    // coinbaseWallet preference set to smartWalletOnly
+    expect(mockCoinbaseWallet.preference).toBe('smartWalletOnly')
   })
 
   /**
