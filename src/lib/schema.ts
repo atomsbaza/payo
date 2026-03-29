@@ -7,6 +7,7 @@ import {
 export const users = pgTable('users', {
   id:          uuid('id').primaryKey().defaultRandom(),
   address:     text('address').notNull().unique(),
+  username:    text('username').unique(),
   ensName:     text('ens_name'),
   ensCachedAt: timestamp('ens_cached_at', { withTimezone: true }),
   createdAt:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

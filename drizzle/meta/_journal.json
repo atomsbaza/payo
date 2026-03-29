@@ -15,6 +15,13 @@
       "when": 1774191200000,
       "tag": "0001_add_single_use",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774785410761,
+      "tag": "0002_slow_wong",
+      "breakpoints": true
     }
   ]
 }

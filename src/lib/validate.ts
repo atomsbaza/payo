@@ -2,6 +2,16 @@ import { z } from 'zod'
 import { getChain } from './chainRegistry'
 import { getToken } from './tokenRegistry'
 
+/** Ethereum address format: 0x followed by 40 hex characters */
+export const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
+
+/** Username: 3-30 chars, starts with a letter, lowercase alphanumeric + hyphens */
+export const UsernameSchema = z
+  .string()
+  .min(3)
+  .max(30)
+  .regex(/^[a-z][a-z0-9-]*$/, 'Must start with a letter, only lowercase alphanumeric and hyphens')
+
 /**
  * Validate that a chain ID is a positive integer (> 0).
  * Mirrors the database CHECK constraint on payment_links.chain_id.
@@ -44,6 +54,16 @@ export function validatePaymentLink(
     return { valid: false, reason: result.error.issues[0]?.message ?? 'Invalid data' }
   }
   return { valid: true, data: result.data }
+}
+
+/** Subset of payment_links fields exposed by the Profile API */
+export type PublicLink = {
+  linkId: string
+  token: string
+  amount: string | null
+  memo: string | null
+  chainId: number
+  expiresAt: string | null  // ISO string
 }
 
 export const CreateLinkRequestSchema = z.object({

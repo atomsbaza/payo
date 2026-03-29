@@ -13,6 +13,7 @@ import { QrLinkModal } from '@/components/QrLinkModal'
 import { useLang } from '@/context/LangContext'
 import { useIsCompanyWallet } from '@/hooks/useIsCompanyWallet'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
+import { UsernameSection } from './UsernameSection'
 import {
   aggregateTotals,
   filterTransactions,
@@ -231,6 +232,9 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Username Section */}
+            {address && <UsernameSection address={address} />}
 
             {/* Tabs */}
             <div className="flex border-b border-white/10 mb-5 sm:mb-6">

@@ -215,6 +215,15 @@ export const translations = {
     linkUsedDesc: 'Payment link นี้ถูกใช้ชำระเงินแล้ว ไม่สามารถใช้ซ้ำได้',
     badgeInvoice: 'ใบแจ้งหนี้',
     badgePaid: 'จ่ายแล้ว ✓',
+
+    // Profile Page
+    profileTitle: 'โปรไฟล์',
+    profileNoLinks: 'ไม่มีลิงก์ชำระเงินที่ใช้งานอยู่',
+    profilePayButton: 'จ่าย',
+    profileNotFound: 'ไม่พบโปรไฟล์',
+    profileAnyAmount: 'จำนวนใดก็ได้',
+    profileActiveLinks: (count: number) => `${count} ลิงก์ชำระเงินที่ใช้งานอยู่`,
+    profileUsername: 'ชื่อผู้ใช้',
   },
 
   en: {
@@ -433,6 +442,15 @@ export const translations = {
     linkUsedDesc: 'This payment link has already been used and cannot accept further payments.',
     badgeInvoice: 'Invoice',
     badgePaid: 'Paid ✓',
+
+    // Profile Page
+    profileTitle: 'Profile',
+    profileNoLinks: 'No active payment links',
+    profilePayButton: 'Pay',
+    profileNotFound: 'Profile not found',
+    profileAnyAmount: 'Any amount',
+    profileActiveLinks: (count: number) => `${count} active payment link${count !== 1 ? 's' : ''}`,
+    profileUsername: 'Username',
   },
 }
 
