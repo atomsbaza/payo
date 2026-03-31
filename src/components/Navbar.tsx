@@ -87,12 +87,6 @@ export function Navbar() {
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden md:flex items-center gap-2 sm:gap-4">
-            <button
-              onClick={toggleLang}
-              className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
-            >
-              {lang === 'th' ? 'EN' : 'TH'}
-            </button>
             {links.map((link) => {
               const isActive = pathname === link.href
               return (
@@ -129,12 +123,6 @@ export function Navbar() {
           aria-label="Main navigation"
           className="md:hidden border-t border-white/10 px-4 py-3 flex flex-col gap-3"
         >
-          <button
-            onClick={toggleLang}
-            className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300 self-start"
-          >
-            {lang === 'th' ? 'EN' : 'TH'}
-          </button>
           {links.map((link, index) => {
             const isActive = pathname === link.href
             return (
