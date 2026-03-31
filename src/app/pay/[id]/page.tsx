@@ -14,6 +14,7 @@ import { getToken } from '@/lib/tokenRegistry'
 import { getChain, isProduction } from '@/lib/chainRegistry'
 import { calculateFee, formatFeePercent } from '@/lib/fee'
 import { getContractAddress, CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
+import { buildReceiptData, type ReceiptData } from '@/lib/receiptData'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { SuccessView } from '@/components/SuccessView'
 import { Navbar } from '@/components/Navbar'
@@ -309,6 +310,25 @@ export default function PayPage({ params }: Props) {
   }
 
   if (isSuccess && txHash) {
+    const receiptData: ReceiptData = buildReceiptData({
+      payerAddress: address ?? '',
+      recipientAddress: data.address,
+      tokenSymbol: token?.symbol ?? data.token,
+      tokenName: token?.name ?? data.token,
+      amount: effectiveAmount,
+      chainName: chain?.name ?? String(data.chainId),
+      chainId: data.chainId,
+      txHash,
+      blockExplorerUrl: chain?.blockExplorerUrl ?? 'https://sepolia.basescan.org',
+      memo: data.memo ?? '',
+      confirmedAt,
+      feeTotal: feeBreakdown ? feeBreakdown.total.toString() : '0',
+      feeAmount: feeBreakdown ? feeBreakdown.fee.toString() : '0',
+      feeNet: feeBreakdown ? feeBreakdown.net.toString() : '0',
+      feeRateBps: feeBreakdown ? feeBreakdown.feeRate.toString() : '0',
+      tokenDecimals: token?.decimals ?? 18,
+    })
+
     return (
       <SuccessView
         amount={effectiveAmount}
@@ -317,6 +337,7 @@ export default function PayPage({ params }: Props) {
         txHash={txHash}
         blockExplorerUrl={chain?.blockExplorerUrl ?? 'https://sepolia.basescan.org'}
         confirmedAt={confirmedAt}
+        receiptData={receiptData}
       />
     )
   }
