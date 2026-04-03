@@ -66,6 +66,28 @@ export const transactions = pgTable('transactions', {
   uniq: unique().on(t.txHash, t.chainId, t.direction),
 }))
 
+export const webhookRegistrations = pgTable('webhook_registrations', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  ownerAddress:    text('owner_address').notNull().unique(),
+  webhookUrl:      text('webhook_url').notNull(),
+  webhookSecret:   text('webhook_secret').notNull(),
+  createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:       timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  lastTriggeredAt: timestamp('last_triggered_at', { withTimezone: true }),
+})
+
+export const webhookLogs = pgTable('webhook_logs', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  ownerAddress:   text('owner_address').notNull(),
+  eventType:      text('event_type').notNull(),
+  payloadSummary: text('payload_summary'),
+  httpStatus:     integer('http_status'),
+  responseTimeMs: integer('response_time_ms'),
+  success:        boolean('success').notNull(),
+  errorMessage:   text('error_message'),
+  createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const rateLimitLog = pgTable('rate_limit_log', {
   key:         text('key').notNull(),
   windowStart: timestamp('window_start', { withTimezone: true }).notNull(),

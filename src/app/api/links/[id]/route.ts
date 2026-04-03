@@ -8,6 +8,8 @@ import { eq, and, sql } from 'drizzle-orm'
 import { logLinkEvent } from '@/lib/link-events'
 import { upsertTransactions } from '@/lib/tx-cache'
 import { createRateLimiter } from '@/lib/rate-limit'
+import { dispatchWebhook } from '@/lib/webhook'
+import { buildPaymentCompletedPayload, buildLinkDeactivatedPayload } from '@/lib/webhookPayload'
 
 const TX_HASH_RE = /^0x[a-fA-F0-9]{64}$/
 const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
@@ -229,6 +231,17 @@ export async function POST(
   // Increment pay_count — and auto-deactivate if single-use
   const link = rows[0]
 
+  // Fire-and-forget: dispatch payment_completed webhook
+  dispatchWebhook(link.ownerAddress, buildPaymentCompletedPayload(id, {
+    payerAddress,
+    recipientAddress: link.recipient,
+    amount: amount ?? '0',
+    token: token ?? '',
+    chainId: link.chainId,
+    txHash,
+    memo: link.memo ?? '',
+  })).catch(() => {})
+
   if (link.singleUse) {
     // Single-use: deactivate atomically with pay_count increment
     // WHERE is_active = true guards against race conditions
@@ -245,6 +258,12 @@ export async function POST(
           eq(paymentLinks.isActive, true),
         ),
       )
+
+    // Fire-and-forget: dispatch link_deactivated webhook
+    dispatchWebhook(link.ownerAddress, buildLinkDeactivatedPayload(id, {
+      linkId: id,
+      reason: 'single_use_paid',
+    })).catch(() => {})
   } else {
     // Multi-use: increment pay_count only (existing behavior)
     await db
