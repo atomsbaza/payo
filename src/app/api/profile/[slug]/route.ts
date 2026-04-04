@@ -25,7 +25,7 @@ export async function GET(
   // Rate limit by IP
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.ip ||
+    request.headers.get('x-real-ip') ||
     'unknown'
   const { allowed, retryAfter } = limiter.check(ip)
   if (!allowed) {
