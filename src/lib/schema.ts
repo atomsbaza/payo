@@ -88,6 +88,17 @@ export const webhookLogs = pgTable('webhook_logs', {
   createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const pushTokens = pgTable('push_tokens', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  ownerAddress: text('owner_address').notNull(),
+  deviceToken:  text('device_token').notNull(),
+  platform:     text('platform').notNull().default('ios'), // 'ios' only for now
+  createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:    timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  uniq: unique().on(t.ownerAddress, t.deviceToken),
+}))
+
 export const rateLimitLog = pgTable('rate_limit_log', {
   key:         text('key').notNull(),
   windowStart: timestamp('window_start', { withTimezone: true }).notNull(),

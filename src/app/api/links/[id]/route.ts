@@ -10,6 +10,7 @@ import { upsertTransactions } from '@/lib/tx-cache'
 import { createRateLimiter } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
 import { buildPaymentCompletedPayload, buildLinkDeactivatedPayload } from '@/lib/webhookPayload'
+import { dispatchPush } from '@/lib/push'
 
 const TX_HASH_RE = /^0x[a-fA-F0-9]{64}$/
 const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
@@ -230,6 +231,14 @@ export async function POST(
 
   // Increment pay_count — and auto-deactivate if single-use
   const link = rows[0]
+
+  // Fire-and-forget: push notification to recipient's devices
+  dispatchPush(
+    link.ownerAddress,
+    'Payment received',
+    `${amount ?? ''} ${token ?? ''} from ${payerAddress.slice(0, 6)}…${payerAddress.slice(-4)}`.trim(),
+    { linkId: id, txHash },
+  ).catch(() => {})
 
   // Fire-and-forget: dispatch payment_completed webhook
   dispatchWebhook(link.ownerAddress, buildPaymentCompletedPayload(id, {
