@@ -14,6 +14,7 @@ import { getToken } from '@/lib/tokenRegistry'
 import { getChain, isProduction } from '@/lib/chainRegistry'
 import { calculateFee, formatFeePercent } from '@/lib/fee'
 import { getContractAddress, CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
+import { buildReceiptData, type ReceiptData } from '@/lib/receiptData'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { SuccessView } from '@/components/SuccessView'
 import { Navbar } from '@/components/Navbar'
@@ -46,6 +47,7 @@ export default function PayPage({ params }: Props) {
   const [pollStartTime, setPollStartTime] = useState<number>(0)
   const [pollTimedOut, setPollTimedOut] = useState(false)
   const [feeExpanded, setFeeExpanded] = useState(false)
+  const [linkDeactivated, setLinkDeactivated] = useState(false)
 
   const data = isDemoLink(id) ? DEMO_PAYMENT_DATA : decodePaymentLink(id)
 
@@ -81,6 +83,9 @@ export default function PayPage({ params }: Props) {
       .then((res) => {
         setHmacVerified(res.verified ?? false)
         setTampered(res.tampered ?? true)
+        if (res.isActive === false) {
+          setLinkDeactivated(true)
+        }
       })
       .catch(() => {
         setHmacVerified(false)
@@ -207,6 +212,22 @@ export default function PayPage({ params }: Props) {
     )
   }
 
+  // Blocked screen for deactivated (single-use) links
+  if (linkDeactivated) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-6xl mb-4">🔒</p>
+          <h1 className="text-xl font-bold mb-2">{t.linkUsedTitle}</h1>
+          <p className="text-gray-400 mb-6">{t.linkUsedDesc}</p>
+          <a href="/" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm">
+            {t.tamperedGoHome}
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   // Check insufficient balance
   const isInsufficient = balanceRaw !== undefined && effectiveAmount
     ? balanceRaw < (token?.address === 'native'
@@ -289,6 +310,25 @@ export default function PayPage({ params }: Props) {
   }
 
   if (isSuccess && txHash) {
+    const receiptData: ReceiptData = buildReceiptData({
+      payerAddress: address ?? '',
+      recipientAddress: data.address,
+      tokenSymbol: token?.symbol ?? data.token,
+      tokenName: token?.name ?? data.token,
+      amount: effectiveAmount,
+      chainName: chain?.name ?? String(data.chainId),
+      chainId: data.chainId,
+      txHash,
+      blockExplorerUrl: chain?.blockExplorerUrl ?? 'https://sepolia.basescan.org',
+      memo: data.memo ?? '',
+      confirmedAt,
+      feeTotal: feeBreakdown ? feeBreakdown.total.toString() : '0',
+      feeAmount: feeBreakdown ? feeBreakdown.fee.toString() : '0',
+      feeNet: feeBreakdown ? feeBreakdown.net.toString() : '0',
+      feeRateBps: feeBreakdown ? feeBreakdown.feeRate.toString() : '0',
+      tokenDecimals: token?.decimals ?? 18,
+    })
+
     return (
       <SuccessView
         amount={effectiveAmount}
@@ -297,6 +337,7 @@ export default function PayPage({ params }: Props) {
         txHash={txHash}
         blockExplorerUrl={chain?.blockExplorerUrl ?? 'https://sepolia.basescan.org'}
         confirmedAt={confirmedAt}
+        receiptData={receiptData}
       />
     )
   }

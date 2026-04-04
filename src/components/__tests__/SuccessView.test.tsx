@@ -80,6 +80,7 @@ describe('SuccessView — Property 4: Success view contains all required payment
               txHash={txHash}
               blockExplorerUrl="https://sepolia.basescan.org"
               confirmedAt={Date.now()}
+              receiptData={null}
             />
           )
 

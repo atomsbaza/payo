@@ -13,6 +13,7 @@ import { QrLinkModal } from '@/components/QrLinkModal'
 import { useLang } from '@/context/LangContext'
 import { useIsCompanyWallet } from '@/hooks/useIsCompanyWallet'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
+import { UsernameSection } from './UsernameSection'
 import {
   aggregateTotals,
   filterTransactions,
@@ -232,6 +233,9 @@ export default function DashboardPage() {
               )}
             </div>
 
+            {/* Username Section */}
+            {address && <UsernameSection address={address} />}
+
             {/* Tabs */}
             <div className="flex border-b border-white/10 mb-5 sm:mb-6">
               <button
@@ -348,6 +352,18 @@ export default function DashboardPage() {
                                 </span>
                               )
                             })()}
+                            {/* 5.3 — Single-use Badge (Invoice / Paid) */}
+                            {link.singleUse && (
+                              (link.payCount ?? 0) >= 1 ? (
+                                <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+                                  {t.badgePaid}
+                                </span>
+                              ) : (
+                                <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full">
+                                  {t.badgeInvoice}
+                                </span>
+                              )
+                            )}
                           </div>
                           {link.memo && (
                             <p className="text-xs text-gray-400 mb-1 truncate">&ldquo;{link.memo}&rdquo;</p>

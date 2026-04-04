@@ -10,14 +10,15 @@ type LangContextType = {
 }
 
 const LangContext = createContext<LangContextType>({
-  lang: 'th',
-  t: translations.th,
+  lang: 'en',
+  t: translations.en,
   toggleLang: () => {},
 })
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('th')
+  const [lang, setLang] = useState<Lang>('en')
 
+  // Sync from localStorage after hydration to avoid mismatch
   useEffect(() => {
     const saved = localStorage.getItem('lang') as Lang | null
     if (saved === 'th' || saved === 'en') setLang(saved)

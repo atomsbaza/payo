@@ -1,10 +1,10 @@
 import type { Token } from './tokens'
 
-// Token data per chain
-// Base Sepolia (84532) - testnet: ETH + USDC only
-// Base Mainnet (8453) - ETH, USDC, USDT, DAI, cbBTC
-// Optimism (10) - ETH, USDC, USDT, DAI
-// Arbitrum One (42161) - ETH, USDC, USDT, DAI
+// Token data per chain — stablecoins listed first
+// Base Sepolia (84532) - testnet: USDC, ETH
+// Base Mainnet (8453) - USDC, USDT, DAI, ETH, cbBTC
+// Optimism (10) - USDC, USDT, DAI, ETH
+// Arbitrum One (42161) - USDC, USDT, DAI, ETH
 
 const ETH: Token = {
   symbol: 'ETH',
@@ -17,7 +17,6 @@ const ETH: Token = {
 const TOKENS_BY_CHAIN: Record<number, Token[]> = {
   // Base Sepolia (testnet)
   84532: [
-    ETH,
     {
       symbol: 'USDC',
       name: 'USD Coin',
@@ -25,11 +24,11 @@ const TOKENS_BY_CHAIN: Record<number, Token[]> = {
       decimals: 6,
       logoUrl: '/tokens/usdc.svg',
     },
+    ETH,
   ],
 
   // Base Mainnet
   8453: [
-    ETH,
     {
       symbol: 'USDC',
       name: 'USD Coin',
@@ -51,6 +50,7 @@ const TOKENS_BY_CHAIN: Record<number, Token[]> = {
       decimals: 18,
       logoUrl: '/tokens/dai.svg',
     },
+    ETH,
     {
       symbol: 'cbBTC',
       name: 'Coinbase Wrapped BTC',
@@ -62,7 +62,6 @@ const TOKENS_BY_CHAIN: Record<number, Token[]> = {
 
   // Optimism
   10: [
-    ETH,
     {
       symbol: 'USDC',
       name: 'USD Coin',
@@ -84,11 +83,11 @@ const TOKENS_BY_CHAIN: Record<number, Token[]> = {
       decimals: 18,
       logoUrl: '/tokens/dai.svg',
     },
+    ETH,
   ],
 
   // Arbitrum One
   42161: [
-    ETH,
     {
       symbol: 'USDC',
       name: 'USD Coin',
@@ -110,6 +109,7 @@ const TOKENS_BY_CHAIN: Record<number, Token[]> = {
       decimals: 18,
       logoUrl: '/tokens/dai.svg',
     },
+    ETH,
   ],
 }
 
@@ -121,4 +121,9 @@ export function getTokensForChain(chainId: number): Token[] {
 
 export function getToken(chainId: number, symbol: string): Token | undefined {
   return TOKENS_BY_CHAIN[chainId]?.find(t => t.symbol === symbol)
+}
+
+export function getDefaultToken(chainId: number): string {
+  const tokens = getTokensForChain(chainId)
+  return tokens[0]?.symbol ?? 'USDC'
 }

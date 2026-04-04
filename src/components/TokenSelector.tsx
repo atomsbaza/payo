@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getTokensForChain } from '@/lib/tokenRegistry'
+import { getTokensForChain, getDefaultToken } from '@/lib/tokenRegistry'
 
 type Props = {
   value: string
@@ -15,7 +15,7 @@ export function TokenSelector({ value, onChange, chainId }: Props) {
   useEffect(() => {
     const tokens = getTokensForChain(chainId)
     if (!tokens.find(t => t.symbol === value)) {
-      onChange('ETH')
+      onChange(getDefaultToken(chainId))
     }
   }, [chainId])
 

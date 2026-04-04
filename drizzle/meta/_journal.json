@@ -8,6 +8,27 @@
       "when": 1774191141557,
       "tag": "0000_left_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774191200000,
+      "tag": "0001_add_single_use",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774785410761,
+      "tag": "0002_slow_wong",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774978619551,
+      "tag": "0003_whole_avengers",
+      "breakpoints": true
     }
   ]
 }

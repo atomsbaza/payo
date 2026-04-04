@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { useLang } from '@/context/LangContext'
 import { shortAddress } from '@/lib/encode'
+import type { ReceiptData } from '@/lib/receiptData'
+import { DownloadReceiptButton } from '@/components/DownloadReceiptButton'
 
 type SuccessViewProps = {
   amount: string
@@ -11,9 +13,10 @@ type SuccessViewProps = {
   txHash: `0x${string}`
   blockExplorerUrl: string
   confirmedAt: number
+  receiptData: ReceiptData | null
 }
 
-export function SuccessView({ amount, token, recipientAddress, txHash, blockExplorerUrl, confirmedAt }: SuccessViewProps) {
+export function SuccessView({ amount, token, recipientAddress, txHash, blockExplorerUrl, confirmedAt, receiptData }: SuccessViewProps) {
   const router = useRouter()
   const { t, lang } = useLang()
 
@@ -71,6 +74,9 @@ export function SuccessView({ amount, token, recipientAddress, txHash, blockExpl
           >
             {t.viewOnBasescan}
           </a>
+          {receiptData && (
+            <DownloadReceiptButton receiptData={receiptData} locale={lang === 'th' ? 'th' : 'en'} />
+          )}
           <button
             onClick={() => router.push('/create')}
             className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition-colors"

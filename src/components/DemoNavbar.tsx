@@ -13,14 +13,8 @@ export function DemoNavbar() {
         <PayoLogo size={24} />
         <span className="font-bold text-base sm:text-lg">Payo</span>
       </Link>
-      <div className="flex items-center gap-2 sm:gap-4">
-        <button
-          onClick={toggleLang}
-          className="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-gray-300"
-        >
-          {lang === 'th' ? 'EN' : 'TH'}
-        </button>
-      </div>
+      <div className="flex items-center gap-2 sm:gap-4" />
+
     </nav>
   )
 }

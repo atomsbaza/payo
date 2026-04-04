@@ -6,6 +6,8 @@ import { createRateLimiter } from '@/lib/rate-limit'
 import { isDatabaseConfigured, getDb } from '@/lib/db'
 import { paymentLinks, users } from '@/lib/schema'
 import { count, eq } from 'drizzle-orm'
+import { dispatchWebhook } from '@/lib/webhook'
+import { buildLinkCreatedPayload } from '@/lib/webhookPayload'
 
 const limiter = createRateLimiter(20, 60_000)
 
@@ -107,6 +109,7 @@ export async function POST(req: NextRequest) {
           memo: memo || null,
           expiresAt: validated.expiresAt ? new Date(validated.expiresAt) : null,
           signature: signature,
+          singleUse: validated.singleUse ?? false,
         }).onConflictDoUpdate({
           target: paymentLinks.linkId,
           set: { updatedAt: new Date() },
@@ -117,6 +120,17 @@ export async function POST(req: NextRequest) {
           .values({ address: validated.address, lastSeen: new Date() })
           .onConflictDoUpdate({ target: users.address, set: { lastSeen: new Date() } })
           .catch(() => {})
+
+        // Fire-and-forget webhook dispatch
+        dispatchWebhook(validated.address, buildLinkCreatedPayload(id, {
+          linkId: id,
+          recipientAddress: validated.address,
+          token: validated.token,
+          chainId: validated.chainId,
+          amount: validated.amount || '',
+          memo: memo || '',
+          singleUse: validated.singleUse ?? false,
+        })).catch(() => {})
       } catch {
         return NextResponse.json(
           { error: 'Failed to create payment link' },

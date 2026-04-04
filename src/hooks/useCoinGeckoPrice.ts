@@ -19,7 +19,13 @@ const CACHE_TTL = 60_000 // 60 seconds
  * Requirements: 2.2, 2.4, 2.5, 2.8
  */
 export function useCoinGeckoPrice(tokenSymbol: string): number | null {
-  const [price, setPrice] = useState<number | null>(null)
+  const [price, setPrice] = useState<number | null>(() => {
+    const coinId = COINGECKO_IDS[tokenSymbol]
+    if (!coinId) return null
+    const cached = priceCache.get(coinId)
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.price
+    return null
+  })
 
   useEffect(() => {
     const coinId = COINGECKO_IDS[tokenSymbol]
@@ -27,7 +33,6 @@ export function useCoinGeckoPrice(tokenSymbol: string): number | null {
 
     const cached = priceCache.get(coinId)
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
-      setPrice(cached.price)
       return
     }
 

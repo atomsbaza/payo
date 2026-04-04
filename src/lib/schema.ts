@@ -7,6 +7,7 @@ import {
 export const users = pgTable('users', {
   id:          uuid('id').primaryKey().defaultRandom(),
   address:     text('address').notNull().unique(),
+  username:    text('username').unique(),
   ensName:     text('ens_name'),
   ensCachedAt: timestamp('ens_cached_at', { withTimezone: true }),
   createdAt:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -26,6 +27,7 @@ export const paymentLinks = pgTable('payment_links', {
   signature:     text('signature').notNull(),
   viewCount:     integer('view_count').notNull().default(0),
   payCount:      integer('pay_count').notNull().default(0),
+  singleUse:     boolean('single_use').notNull().default(false),
   isActive:      boolean('is_active').notNull().default(true),
   deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
   createdAt:     timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -62,6 +64,39 @@ export const transactions = pgTable('transactions', {
   cachedAt:        timestamp('cached_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   uniq: unique().on(t.txHash, t.chainId, t.direction),
+}))
+
+export const webhookRegistrations = pgTable('webhook_registrations', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  ownerAddress:    text('owner_address').notNull().unique(),
+  webhookUrl:      text('webhook_url').notNull(),
+  webhookSecret:   text('webhook_secret').notNull(),
+  createdAt:       timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:       timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  lastTriggeredAt: timestamp('last_triggered_at', { withTimezone: true }),
+})
+
+export const webhookLogs = pgTable('webhook_logs', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  ownerAddress:   text('owner_address').notNull(),
+  eventType:      text('event_type').notNull(),
+  payloadSummary: text('payload_summary'),
+  httpStatus:     integer('http_status'),
+  responseTimeMs: integer('response_time_ms'),
+  success:        boolean('success').notNull(),
+  errorMessage:   text('error_message'),
+  createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const pushTokens = pgTable('push_tokens', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  ownerAddress: text('owner_address').notNull(),
+  deviceToken:  text('device_token').notNull(),
+  platform:     text('platform').notNull().default('ios'), // 'ios' only for now
+  createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:    timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  uniq: unique().on(t.ownerAddress, t.deviceToken),
 }))
 
 export const rateLimitLog = pgTable('rate_limit_log', {

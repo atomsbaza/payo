@@ -8,6 +8,9 @@ import { eq, and, sql } from 'drizzle-orm'
 import { logLinkEvent } from '@/lib/link-events'
 import { upsertTransactions } from '@/lib/tx-cache'
 import { createRateLimiter } from '@/lib/rate-limit'
+import { dispatchWebhook } from '@/lib/webhook'
+import { buildPaymentCompletedPayload, buildLinkDeactivatedPayload } from '@/lib/webhookPayload'
+import { dispatchPush } from '@/lib/push'
 
 const TX_HASH_RE = /^0x[a-fA-F0-9]{64}$/
 const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
@@ -27,7 +30,15 @@ export async function GET(
 
   // 1. Demo link — return demo data without querying DB
   if (isDemoLink(id)) {
-    return NextResponse.json({ id, data: DEMO_PAYMENT_DATA, verified: true, tampered: false })
+    return NextResponse.json({
+      id,
+      data: DEMO_PAYMENT_DATA,
+      verified: true,
+      tampered: false,
+      isActive: true,
+      deactivatedAt: null,
+      singleUse: false,
+    })
   }
 
   // 2. If DB is configured, try to look up the link there first
@@ -69,7 +80,15 @@ export async function GET(
           expiresAt: row.expiresAt?.toISOString(),
         }
 
-        return NextResponse.json({ id, data, verified: true, tampered: false })
+        return NextResponse.json({
+          id,
+          data,
+          verified: true,
+          tampered: false,
+          isActive: row.isActive,
+          deactivatedAt: row.deactivatedAt?.toISOString() ?? null,
+          singleUse: row.singleUse ?? false,
+        })
       }
       // Not found in DB — fall through to HMAC decode
     } catch {
@@ -111,7 +130,15 @@ export async function GET(
     }).catch(() => {})
   }
 
-  return NextResponse.json({ id, data, verified: hmacValid, tampered: !hmacValid })
+  return NextResponse.json({
+    id,
+    data,
+    verified: hmacValid,
+    tampered: !hmacValid,
+    isActive: true,
+    deactivatedAt: null,
+    singleUse: false,
+  })
 }
 
 
@@ -202,14 +229,59 @@ export async function POST(
     txHash,
   })
 
-  // Increment pay_count atomically
-  await db
-    .update(paymentLinks)
-    .set({ payCount: sql`pay_count + 1` })
-    .where(eq(paymentLinks.linkId, id))
+  // Increment pay_count — and auto-deactivate if single-use
+  const link = rows[0]
+
+  // Fire-and-forget: push notification to recipient's devices
+  dispatchPush(
+    link.ownerAddress,
+    'Payment received',
+    `${amount ?? ''} ${token ?? ''} from ${payerAddress.slice(0, 6)}…${payerAddress.slice(-4)}`.trim(),
+    { linkId: id, txHash },
+  ).catch(() => {})
+
+  // Fire-and-forget: dispatch payment_completed webhook
+  dispatchWebhook(link.ownerAddress, buildPaymentCompletedPayload(id, {
+    payerAddress,
+    recipientAddress: link.recipient,
+    amount: amount ?? '0',
+    token: token ?? '',
+    chainId: link.chainId,
+    txHash,
+    memo: link.memo ?? '',
+  })).catch(() => {})
+
+  if (link.singleUse) {
+    // Single-use: deactivate atomically with pay_count increment
+    // WHERE is_active = true guards against race conditions
+    await db
+      .update(paymentLinks)
+      .set({
+        payCount: sql`pay_count + 1`,
+        isActive: false,
+        deactivatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(paymentLinks.linkId, id),
+          eq(paymentLinks.isActive, true),
+        ),
+      )
+
+    // Fire-and-forget: dispatch link_deactivated webhook
+    dispatchWebhook(link.ownerAddress, buildLinkDeactivatedPayload(id, {
+      linkId: id,
+      reason: 'single_use_paid',
+    })).catch(() => {})
+  } else {
+    // Multi-use: increment pay_count only (existing behavior)
+    await db
+      .update(paymentLinks)
+      .set({ payCount: sql`pay_count + 1` })
+      .where(eq(paymentLinks.linkId, id))
+  }
 
   // Fire-and-forget: upsert transaction record
-  const link = rows[0]
   upsertTransactions(
     [
       {
