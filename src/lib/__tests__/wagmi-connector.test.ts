@@ -15,13 +15,22 @@ vi.mock('@rainbow-me/rainbowkit', () => ({
   },
 }))
 
-// Mock coinbaseWallet from @rainbow-me/rainbowkit/wallets
+// Mock all wallets from @rainbow-me/rainbowkit/wallets
 const mockCoinbaseWallet = Object.assign(
   (opts: Record<string, unknown>) => ({ _type: 'coinbase-wallet', ...opts }),
   { preference: undefined as string | undefined, _isMockWallet: true },
 )
+const mockMetaMaskWallet = vi.fn(() => ({ _type: 'metamask-wallet' }))
+const mockRainbowWallet = vi.fn(() => ({ _type: 'rainbow-wallet' }))
+const mockTrustWallet = vi.fn(() => ({ _type: 'trust-wallet' }))
+const mockWalletConnectWallet = vi.fn(() => ({ _type: 'walletconnect-wallet' }))
+
 vi.mock('@rainbow-me/rainbowkit/wallets', () => ({
   coinbaseWallet: mockCoinbaseWallet,
+  metaMaskWallet: mockMetaMaskWallet,
+  rainbowWallet: mockRainbowWallet,
+  trustWallet: mockTrustWallet,
+  walletConnectWallet: mockWalletConnectWallet,
 }))
 
 describe('wagmi connector unit tests', () => {
@@ -35,10 +44,6 @@ describe('wagmi connector unit tests', () => {
     vi.resetModules()
   })
 
-  /**
-   * Validates: Requirements 1.2
-   * Coinbase Smart Wallet appears as a connector option
-   */
   it('Coinbase Smart Wallet appears as a connector option in wallets config', async () => {
     const wagmiModule = await import('../wagmi')
 
@@ -52,31 +57,19 @@ describe('wagmi connector unit tests', () => {
     expect(wallets).toBeDefined()
     expect(Array.isArray(wallets)).toBe(true)
 
-    // There should be a group containing the coinbase wallet
     const groupWithCoinbase = wallets.find(g =>
       g.wallets.includes(mockCoinbaseWallet),
     )
     expect(groupWithCoinbase).toBeDefined()
-
-    // coinbaseWallet preference set to smartWalletOnly
     expect(mockCoinbaseWallet.preference).toBe('smartWalletOnly')
   })
 
-  /**
-   * Validates: Requirements 4.3
-   * appName consistency is 'Crypto Pay Link'
-   */
   it("appName is 'Crypto Pay Link'", async () => {
     await import('../wagmi')
-
     expect(capturedDefaultConfigArgs).toBeDefined()
     expect(capturedDefaultConfigArgs!.appName).toBe('Crypto Pay Link')
   })
 
-  /**
-   * Validates: Requirements 5.2
-   * projectId fallback is 'YOUR_PROJECT_ID' when env var is not set
-   */
   it("projectId falls back to 'YOUR_PROJECT_ID' when env var is not set", async () => {
     const originalEnv = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
     delete process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
@@ -89,19 +82,13 @@ describe('wagmi connector unit tests', () => {
     expect(capturedDefaultConfigArgs).toBeDefined()
     expect(capturedDefaultConfigArgs!.projectId).toBe('YOUR_PROJECT_ID')
 
-    // Restore env
     if (originalEnv !== undefined) {
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID = originalEnv
     }
   })
 
-  /**
-   * Validates: Requirements 3.2
-   * Module exports both config and activeChains
-   */
   it('module exports both config and activeChains', async () => {
     const wagmiModule = await import('../wagmi')
-
     expect(wagmiModule).toHaveProperty('config')
     expect(wagmiModule).toHaveProperty('activeChains')
     expect(wagmiModule.config).toBeDefined()

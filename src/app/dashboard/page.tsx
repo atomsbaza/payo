@@ -226,10 +226,7 @@ export default function DashboardPage() {
                 <p className="text-xl sm:text-2xl font-bold">{myLinks.length}</p>
                 <p className="text-xs sm:text-sm text-gray-400">{t.statsLinks}</p>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
-                <p className="text-xl sm:text-2xl font-bold text-green-400">{filteredTxs.filter(tx => tx.direction === 'in').length}</p>
-                <p className="text-xs sm:text-sm text-gray-400">{t.statsTx}</p>
-              </div>
+              {/* TX received stat hidden — buggy */}
               <div className="col-span-2 sm:col-span-1 bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
                 <p className="text-sm sm:text-base font-bold text-indigo-400 truncate">
                   {shortAddress(address ?? '')}
@@ -259,21 +256,7 @@ export default function DashboardPage() {
               >
                 {t.tabLinks}
               </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                  activeTab === 'history'
-                    ? 'border-indigo-500 text-white'
-                    : 'border-transparent text-gray-400 hover:text-white'
-                }`}
-              >
-                {t.tabTx}
-                {txHistory.length > 0 && (
-                  <span className="text-xs bg-indigo-500/30 text-indigo-400 px-1.5 py-0.5 rounded-full">
-                    {txHistory.length}
-                  </span>
-                )}
-              </button>
+              {/* TX History tab hidden — buggy */}
               {isCompany && (
                 <button
                   onClick={() => setActiveTab('fees')}
@@ -286,15 +269,7 @@ export default function DashboardPage() {
                   Fees
                 </button>
               )}
-              {/* 5.6 — Export CSV button (visible when history tab active and has txs) */}
-              {activeTab === 'history' && filteredTxs.length > 0 && (
-                <button
-                  onClick={handleExportCsv}
-                  className="ml-auto text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white rounded-lg transition-colors self-center"
-                >
-                  Export CSV
-                </button>
-              )}
+              {/* Export CSV hidden with TX history tab */}
             </div>
 
             {/* Tab: Payment Links */}
@@ -383,20 +358,7 @@ export default function DashboardPage() {
                             {shortAddress(link.address)} •{' '}
                             {new Date(link.createdAt).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US')}
                           </p>
-                          {/* 5.7 — Matched TX indicator */}
-                          {(() => {
-                            const matched = matchTxToLink(link, txHistory)
-                            if (!matched) return null
-                            const amount = formatTxValue(matched)
-                            const meetsTarget = link.amount
-                              ? parseFloat(amount) >= parseFloat(link.amount)
-                              : true
-                            return (
-                              <span className={`text-xs ${meetsTarget ? 'text-green-400' : 'text-yellow-400'}`}>
-                                ได้รับเงินแล้ว ✓ {amount} {link.token}
-                              </span>
-                            )
-                          })()}
+                          {/* matchTxToLink indicator hidden — TX receive buggy */}
                         </div>
                         <div className="flex gap-1.5 sm:gap-2 shrink-0">
                           <button
@@ -574,8 +536,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tab: TX History */}
-            {activeTab === 'history' && (
+            {/* Tab: TX History — hidden, buggy */}
+            {false && activeTab === 'history' && (
               <div className="space-y-3">
                 {txLoading ? (
                   <div className="space-y-3" data-testid="tx-skeleton">

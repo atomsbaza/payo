@@ -32,6 +32,10 @@ const mockCoinbaseWallet = Object.assign(
 )
 vi.mock('@rainbow-me/rainbowkit/wallets', () => ({
   coinbaseWallet: mockCoinbaseWallet,
+  metaMaskWallet: vi.fn(() => ({ _type: 'metamask-wallet' })),
+  rainbowWallet: vi.fn(() => ({ _type: 'rainbow-wallet' })),
+  trustWallet: vi.fn(() => ({ _type: 'trust-wallet' })),
+  walletConnectWallet: vi.fn(() => ({ _type: 'walletconnect-wallet' })),
 }))
 
 describe('Feature: embedded-wallet, Property 1: Config includes coinbaseWallet connector with smartWalletOnly preference and preserves existing fields', () => {

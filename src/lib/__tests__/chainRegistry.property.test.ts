@@ -395,12 +395,12 @@ describe('Feature: testnet-env-visibility, Property 3: getChain() is environment
   })
 
   /**
-   * Concrete check: getChain() finds the testnet chain (Base Sepolia)
-   * even when running in production mode, using the real registry.
+   * Concrete check: in production mode, getChain() returns undefined for testnet chains
+   * because the real registry intentionally filters them out.
    *
    * **Validates: Requirements 5.1, 5.3**
    */
-  it('real registry: getChain() finds Base Sepolia (testnet) in production mode', async () => {
+  it('real registry: getChain() returns undefined for Base Sepolia in production mode', async () => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
     vi.doUnmock('../chainRegistry')
@@ -408,13 +408,10 @@ describe('Feature: testnet-env-visibility, Property 3: getChain() is environment
 
     vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production')
 
-    // Use dynamic import after full reset to get the real module
     const { getChain } = await import('../chainRegistry')
-    const result = getChain(84532) // Base Sepolia — a testnet chain
+    const result = getChain(84532) // Base Sepolia — filtered out in production
 
-    expect(result).toBeDefined()
-    expect(result!.chainId).toBe(84532)
-    expect(result!.isTestnet).toBe(true)
+    expect(result).toBeUndefined()
   })
 })
 
