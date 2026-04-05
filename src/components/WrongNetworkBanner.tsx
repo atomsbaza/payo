@@ -1,16 +1,14 @@
 'use client'
 
 import { useChainId, useSwitchChain } from 'wagmi'
-import { getChain } from '@/lib/chainRegistry'
+import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
 import { useLang } from '@/context/LangContext'
-
-const DEFAULT_CHAIN_ID = 84532 // Base Sepolia
 
 type Props = {
   expectedChainId?: number
 }
 
-export function WrongNetworkBanner({ expectedChainId = DEFAULT_CHAIN_ID }: Props) {
+export function WrongNetworkBanner({ expectedChainId = getDefaultChainId() }: Props) {
   const chainId = useChainId()
   const { switchChain, isPending } = useSwitchChain()
   const { t } = useLang()
