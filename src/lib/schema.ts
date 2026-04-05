@@ -99,6 +99,19 @@ export const pushTokens = pgTable('push_tokens', {
   uniq: unique().on(t.ownerAddress, t.deviceToken),
 }))
 
+// Web Push (VAPID) subscriptions — one row per browser/device
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  ownerAddress: text('owner_address').notNull(),
+  endpoint:     text('endpoint').notNull(),
+  p256dh:       text('p256dh').notNull(),
+  auth:         text('auth').notNull(),
+  createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:    timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  uniq: unique().on(t.ownerAddress, t.endpoint),
+}))
+
 export const rateLimitLog = pgTable('rate_limit_log', {
   key:         text('key').notNull(),
   windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
