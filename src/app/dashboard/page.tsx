@@ -29,6 +29,7 @@ import type { DashboardTab, TokenTotal } from './aggregation'
 import ConsolidatedUsdCard from './ConsolidatedUsdCard'
 import type { UnifiedTx } from '@/app/api/tx/[address]/route'
 import type { FeeTx } from '@/app/api/fees/[address]/route'
+import { getSupportedChains } from '@/lib/chainRegistry'
 
 const COMPANY_WALLET = process.env.NEXT_PUBLIC_COMPANY_WALLET
 
@@ -107,10 +108,16 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!address) return
     setTxLoading(true)
-    fetch(`/api/tx/${address}`)
-      .then((r) => r.json())
-      .then((data) => setTxHistory(data.transactions ?? []))
-      .catch(() => setTxHistory([]))
+    const chains = getSupportedChains()
+    Promise.all(
+      chains.map(c =>
+        fetch(`/api/tx/${address}?chainId=${c.chainId}`)
+          .then(r => r.json())
+          .then(data => data.transactions ?? [])
+          .catch(() => [])
+      )
+    )
+      .then(results => setTxHistory(results.flat()))
       .finally(() => setTxLoading(false))
   }, [address])
 
@@ -119,13 +126,17 @@ export default function DashboardPage() {
     if (activeTab !== 'fees' || !isCompany || !COMPANY_WALLET) return
     setFeeLoading(true)
     setFeeError(false)
-    fetch(`/api/fees/${COMPANY_WALLET}`)
-      .then((r) => r.json())
-      .then((data) => setFeeTxs(data.transactions ?? []))
-      .catch(() => {
-        setFeeTxs([])
-        setFeeError(true)
-      })
+    const chains = getSupportedChains()
+    Promise.all(
+      chains.map(c =>
+        fetch(`/api/fees/${COMPANY_WALLET}?chainId=${c.chainId}`)
+          .then(r => r.json())
+          .then(data => data.transactions ?? [])
+          .catch(() => [])
+      )
+    )
+      .then(results => setFeeTxs(results.flat()))
+      .catch(() => { setFeeTxs([]); setFeeError(true) })
       .finally(() => setFeeLoading(false))
   }, [activeTab, isCompany])
 
@@ -456,13 +467,17 @@ export default function DashboardPage() {
                       onClick={() => {
                         setFeeError(false)
                         setFeeLoading(true)
-                        fetch(`/api/fees/${COMPANY_WALLET}`)
-                          .then((r) => r.json())
-                          .then((data) => setFeeTxs(data.transactions ?? []))
-                          .catch(() => {
-                            setFeeTxs([])
-                            setFeeError(true)
-                          })
+                        const chains = getSupportedChains()
+                        Promise.all(
+                          chains.map(c =>
+                            fetch(`/api/fees/${COMPANY_WALLET}?chainId=${c.chainId}`)
+                              .then(r => r.json())
+                              .then(data => data.transactions ?? [])
+                              .catch(() => [])
+                          )
+                        )
+                          .then(results => setFeeTxs(results.flat()))
+                          .catch(() => { setFeeTxs([]); setFeeError(true) })
                           .finally(() => setFeeLoading(false))
                       }}
                       className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-colors"

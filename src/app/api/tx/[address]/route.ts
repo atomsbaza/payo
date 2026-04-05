@@ -6,7 +6,7 @@ import {
   upsertTransactions,
   cleanupStaleTransactions,
 } from '@/lib/tx-cache'
-import { getChain } from '@/lib/chainRegistry'
+import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
 
 const BASESCAN_API = 'https://api.etherscan.io/v2/api'
 const STALE_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days for graceful degradation
@@ -173,7 +173,7 @@ export async function GET(
 
   // Read chainId from query param with backward-compatible default
   const chainIdParam = req.nextUrl.searchParams.get('chainId')
-  const chainIdNum = chainIdParam ? Number(chainIdParam) : 84532
+  const chainIdNum = chainIdParam ? Number(chainIdParam) : getDefaultChainId()
 
   if (!getChain(chainIdNum)) {
     return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 })

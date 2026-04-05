@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRateLimiter } from '@/lib/rate-limit'
-import { getChain } from '@/lib/chainRegistry'
+import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
 
 const BASESCAN_API = 'https://api.etherscan.io/v2/api'
 const limiter = createRateLimiter(10, 60_000)
@@ -51,9 +51,9 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
   }
 
-  // Read chainId from query param, default to Base Sepolia
+  // Read chainId from query param, default based on environment
   const chainIdParam = req.nextUrl.searchParams.get('chainId')
-  const chainId = chainIdParam ? Number(chainIdParam) : 84532
+  const chainId = chainIdParam ? Number(chainIdParam) : getDefaultChainId()
 
   if (!getChain(chainId)) {
     return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 })

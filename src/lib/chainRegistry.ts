@@ -49,6 +49,9 @@ export function getSupportedChains(): SupportedChain[] {
 }
 
 export function getChain(chainId: number): SupportedChain | undefined {
+  if (isProduction()) {
+    return CHAINS.find(c => c.chainId === chainId && !c.isTestnet)
+  }
   return CHAINS.find(c => c.chainId === chainId)
 }
 
