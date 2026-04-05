@@ -99,7 +99,7 @@ describe('Feature: single-use-link, Property 5: Deactivated link GET response in
       db: mockDb,
     }))
 
-    const { GET } = await import('../../links/[id]/route')
+    const { GET } = await import('../[id]/route')
 
     await fc.assert(
       fc.asyncProperty(

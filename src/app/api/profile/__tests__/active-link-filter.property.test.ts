@@ -98,7 +98,7 @@ describe('Feature: public-profile-page, Property 8: Active link filtering', () =
     }))
 
     // We'll set up the mock inside the property so each run gets fresh data
-    const { GET } = await import('../../profile/[slug]/route')
+    const { GET } = await import('../[slug]/route')
 
     await fc.assert(
       fc.asyncProperty(
@@ -186,7 +186,7 @@ describe('Feature: public-profile-page, Property 8: Active link filtering', () =
             db: mockDb,
           }))
 
-          const mod = await import('../../profile/[slug]/route')
+          const mod = await import('../[slug]/route')
 
           const req = new NextRequest(
             `http://localhost:3000/api/profile/${slug}`,
@@ -285,7 +285,7 @@ describe('Feature: public-profile-page, Property 8: Active link filtering', () =
             db: mockDb,
           }))
 
-          const mod = await import('../../profile/[slug]/route')
+          const mod = await import('../[slug]/route')
 
           const req = new NextRequest(
             `http://localhost:3000/api/profile/${slug}`,

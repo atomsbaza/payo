@@ -141,7 +141,7 @@ describe('Feature: single-use-link, Property 4: Idempotent duplicate confirmatio
       db: smartMockDb,
     }))
 
-    const { POST } = await import('../../links/[id]/route')
+    const { POST } = await import('../[id]/route')
 
     await fc.assert(
       fc.asyncProperty(

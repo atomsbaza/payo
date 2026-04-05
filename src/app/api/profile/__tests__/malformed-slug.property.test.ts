@@ -97,7 +97,7 @@ describe('Feature: public-profile-page, Property 11: Malformed slug rejection', 
       }),
     }))
 
-    const { GET } = await import('../../profile/[slug]/route')
+    const { GET } = await import('../[slug]/route')
     return GET
   }
 

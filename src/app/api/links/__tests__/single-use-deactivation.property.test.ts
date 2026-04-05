@@ -152,7 +152,7 @@ describe('Feature: single-use-link, Property 2: Single-use auto-deactivation on 
       db: smartMockDb,
     }))
 
-    const { POST } = await import('../../links/[id]/route')
+    const { POST } = await import('../[id]/route')
 
     await fc.assert(
       fc.asyncProperty(

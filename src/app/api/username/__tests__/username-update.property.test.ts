@@ -77,7 +77,7 @@ describe('Feature: public-profile-page, Property 4: Username update replaces old
       db: mockDb,
     }))
 
-    const { PUT } = await import('../../username/[address]/route')
+    const { PUT } = await import('../[address]/route')
 
     await fc.assert(
       fc.asyncProperty(ethAddressArb, usernameArb, usernameArb, async (address, usernameA, usernameB) => {

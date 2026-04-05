@@ -295,7 +295,7 @@ describe('Preservation: Post-Payment Data Loss Bugfix', () => {
         }),
       }))
 
-      const { POST } = await import('../../links/route')
+      const { POST } = await import('../route')
 
       await fc.assert(
         fc.asyncProperty(

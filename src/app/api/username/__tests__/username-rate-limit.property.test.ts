@@ -76,7 +76,7 @@ describe('Feature: public-profile-page, Property 6: Username API rate limiting',
           }),
         }))
 
-        const { PUT } = await import('../../username/[address]/route')
+        const { PUT } = await import('../[address]/route')
 
         // First 5 requests should succeed (200)
         for (let i = 0; i < 5; i++) {

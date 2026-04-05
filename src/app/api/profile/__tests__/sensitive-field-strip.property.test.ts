@@ -125,7 +125,7 @@ describe('Feature: public-profile-page, Property 9: Sensitive field stripping', 
             db: mockDb,
           }))
 
-          const mod = await import('../../profile/[slug]/route')
+          const mod = await import('../[slug]/route')
 
           const req = new NextRequest(
             `http://localhost:3000/api/profile/${slug}`,

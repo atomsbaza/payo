@@ -133,7 +133,7 @@ describe('Feature: single-use-link, Property 3: Multi-use link preservation (no 
       db: smartMockDb,
     }))
 
-    const { POST } = await import('../../links/[id]/route')
+    const { POST } = await import('../[id]/route')
 
     await fc.assert(
       fc.asyncProperty(

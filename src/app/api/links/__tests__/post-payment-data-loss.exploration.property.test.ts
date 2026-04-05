@@ -178,7 +178,7 @@ describe('Bug Condition Exploration: Post-Payment Data Loss', () => {
      * **Validates: Requirements 1.2, 1.3, 1.4**
      */
     it('should export a POST handler for payment confirmation (expected to FAIL)', async () => {
-      const linkIdRouteModule = await import('../../links/[id]/route')
+      const linkIdRouteModule = await import('../[id]/route')
 
       await fc.assert(
         fc.asyncProperty(
@@ -202,7 +202,7 @@ describe('Bug Condition Exploration: Post-Payment Data Loss', () => {
      * **Validates: Requirements 1.2, 1.3, 1.4**
      */
     it('POST /api/links/[id] should respond 200 for payment confirmation (expected to FAIL)', async () => {
-      const linkIdRouteModule = await import('../../links/[id]/route') as Record<string, unknown>
+      const linkIdRouteModule = await import('../[id]/route') as Record<string, unknown>
 
       await fc.assert(
         fc.asyncProperty(

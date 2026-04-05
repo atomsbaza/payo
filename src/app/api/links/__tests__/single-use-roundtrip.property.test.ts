@@ -98,7 +98,7 @@ describe('Feature: single-use-link, Property 1: Single-use flag round-trip persi
       db: mockDb,
     }))
 
-    const { POST } = await import('../../links/route')
+    const { POST } = await import('../route')
 
     await fc.assert(
       fc.asyncProperty(

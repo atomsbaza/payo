@@ -86,7 +86,7 @@ describe('Feature: public-profile-page, Property 3: Username storage round-trip'
       db: mockDb,
     }))
 
-    const { PUT } = await import('../../username/[address]/route')
+    const { PUT } = await import('../[address]/route')
 
     await fc.assert(
       fc.asyncProperty(ethAddressArb, usernameArb, async (address, username) => {

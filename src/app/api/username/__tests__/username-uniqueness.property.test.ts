@@ -90,7 +90,7 @@ describe('Feature: public-profile-page, Property 2: Username uniqueness enforcem
       db: mockDb,
     }))
 
-    const { PUT } = await import('../../username/[address]/route')
+    const { PUT } = await import('../[address]/route')
 
     await fc.assert(
       fc.asyncProperty(

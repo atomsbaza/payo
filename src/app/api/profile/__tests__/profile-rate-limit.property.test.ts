@@ -87,7 +87,7 @@ describe('Feature: public-profile-page, Property 10: Profile API rate limiting',
           getDb: () => mockDb,
         }))
 
-        const { GET } = await import('../../profile/[slug]/route')
+        const { GET } = await import('../[slug]/route')
 
         const consistentIp = '192.168.1.42'
 

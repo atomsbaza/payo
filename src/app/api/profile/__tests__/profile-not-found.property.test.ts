@@ -62,7 +62,7 @@ describe('Feature: public-profile-page, Property 7: Non-existent slug returns 40
       db: mockDb,
     }))
 
-    const { GET } = await import('../../profile/[slug]/route')
+    const { GET } = await import('../[slug]/route')
 
     await fc.assert(
       fc.asyncProperty(usernameArb, async (slug) => {
