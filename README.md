@@ -170,11 +170,17 @@ crypto-pay-link/
 │   │   ├── pay/[id]/page.tsx       # หน้าชำระเงิน
 │   │   ├── dashboard/page.tsx      # Dashboard (links + TX history)
 │   │   ├── demo/                   # Demo flow (ไม่ต้อง connect wallet)
+│   │   ├── u/[slug]/               # Public profile page
 │   │   └── api/
 │   │       ├── links/route.ts      # POST สร้าง link / GET นับ link
 │   │       ├── links/[id]/route.ts # GET decode + verify link
 │   │       ├── tx/[address]/       # GET TX history จาก Basescan
-│   │       └── fees/[address]/     # GET fee TX history
+│   │       ├── fees/[address]/     # GET fee TX history
+│   │       ├── dashboard/          # GET dashboard stats
+│   │       ├── profile/            # GET/POST user profile
+│   │       ├── username/           # GET/POST username
+│   │       ├── webhooks/           # POST payment webhook
+│   │       └── notifications/      # POST push notification sub
 │   ├── components/
 │   │   ├── Navbar.tsx              # Navigation bar + wallet + lang toggle
 │   │   ├── Footer.tsx              # Footer
@@ -185,6 +191,7 @@ crypto-pay-link/
 │   │   ├── ChainSelector.tsx       # Chain picker
 │   │   ├── Jazzicon.tsx            # Wallet avatar
 │   │   ├── SuccessView.tsx         # TX success + receipt
+│   │   ├── DownloadReceiptButton.tsx # PDF receipt download
 │   │   ├── BlockedScreen.tsx       # HMAC tamper blocked
 │   │   ├── WrongNetworkBanner.tsx  # Wrong chain warning
 │   │   ├── Skeleton.tsx            # Loading skeleton
@@ -216,6 +223,14 @@ crypto-pay-link/
 │       ├── addressValidation.ts    # Ethereum address validation
 │       ├── demo.ts                 # Demo mode utilities
 │       ├── og-metadata.ts          # OpenGraph metadata
+│       ├── link-events.ts          # Link event logging helpers
+│       ├── tx-cache.ts             # TX history cache layer
+│       ├── shareUrl.ts             # Share URL builder
+│       ├── receiptData.ts          # Receipt data helpers
+│       ├── generateReceiptPdf.ts   # PDF receipt generation
+│       ├── push.ts                 # Push notification helpers
+│       ├── webhook.ts              # Webhook dispatch
+│       ├── webhookPayload.ts       # Webhook payload types
 │       └── validate-storage.ts     # localStorage validation
 ├── middleware.ts                    # Security headers + route guards
 ├── hardhat.config.ts               # Hardhat config (Base Sepolia)
@@ -376,6 +391,11 @@ npm run db:push
 | `GET` | `/api/links/[id]` | Decode + verify HMAC + log view event |
 | `GET` | `/api/tx/[address]` | ดึง transaction history จาก Basescan API |
 | `GET` | `/api/fees/[address]` | ดึง fee transaction history (company wallet only) |
+| `GET` | `/api/dashboard` | ดึงข้อมูล dashboard (links + stats) |
+| `GET/POST` | `/api/profile` | ดึง/อัปเดต user profile |
+| `GET/POST` | `/api/username` | ตรวจสอบ / ตั้ง username สำหรับ `/u/[slug]` |
+| `POST` | `/api/webhooks` | Webhook endpoint สำหรับ payment confirmation |
+| `POST` | `/api/notifications` | Push notification subscription |
 
 ### ตัวอย่าง: สร้าง Payment Link
 
@@ -479,23 +499,23 @@ npx vitest --run src/lib/__tests__/encode.test.ts
 - Demo mode
 - ENS resolution + Jazzicon + fiat prices
 - Mobile UX optimizations
+- Database integration (Neon + Drizzle) — users, links, events, TX cache, rate limit
+- Cross-device sync ผ่าน DB
+- Public profile page `/u/[slug]`
+- Payment receipt / PDF download
+- Payment confirmation webhook
+- Push notifications
 
 ### 📋 Planned
-- Database integration (Neon + Drizzle) — schema พร้อม
-- Cross-device sync ผ่าน DB
-- Link analytics (view count, pay count)
 - Single-use link (Invoice mode)
 - LINE / WhatsApp share button
 - Multi-chain TX history consolidation
 - Mobile app (Expo / React Native)
 
 ### 💡 Ideas
-- Public profile page `/u/[slug]`
-- Payment receipt / PDF invoice
 - On-ramp integration (Transak / MoonPay)
 - Recurring payment links
 - Bulk link creation จาก CSV
-- Payment confirmation webhook
 
 ---
 
