@@ -4,7 +4,7 @@
 
 Payo เป็นแพลตฟอร์มสร้าง payment link สำหรับ crypto ที่ทำงานแบบ trustless — เงินโอนตรงจาก payer ไป payee โดยไม่ผ่านตัวกลาง รองรับ ETH และ ERC-20 tokens บน L2 chains (Base, Optimism, Arbitrum) พร้อม QR code, i18n ภาษาไทย/อังกฤษ, และ dashboard สำหรับติดตามธุรกรรม
 
-**Live Demo:** [crypto-pay-link-teal.vercel.app](https://crypto-pay-link-teal.vercel.app)
+**Live:** [payo.cash](https://payo.cash)
 
 ---
 
