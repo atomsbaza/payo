@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: '/', labelKey: 'navHome' as const },
   { href: '/create', labelKey: 'navCreateLink' as const },
   { href: '/dashboard', labelKey: 'navDashboard' as const },
+  { href: '/contact', labelKey: 'navContact' as const },
 ]
 
 /**

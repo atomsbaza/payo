@@ -118,6 +118,7 @@ export const translations = {
     // Navbar
     navHome: 'หน้าหลัก',
     navFees: 'ค่าธรรมเนียม',
+    navContact: 'ติดต่อเรา',
 
     // Blocked Screen
     tamperedTitle: 'ลิงก์นี้ถูกดัดแปลง',
@@ -364,6 +365,7 @@ export const translations = {
     // Navbar
     navHome: 'Home',
     navFees: 'Fees',
+    navContact: 'Contact',
 
     // Blocked Screen
     tamperedTitle: 'This link has been tampered with',

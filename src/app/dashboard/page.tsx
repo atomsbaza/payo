@@ -105,21 +105,8 @@ export default function DashboardPage() {
     setLinksLoading(false)
   }, [])
 
-  useEffect(() => {
-    if (!address) return
-    setTxLoading(true)
-    const chains = getSupportedChains()
-    Promise.all(
-      chains.map(c =>
-        fetch(`/api/tx/${address}?chainId=${c.chainId}`)
-          .then(r => r.json())
-          .then(data => data.transactions ?? [])
-          .catch(() => [])
-      )
-    )
-      .then(results => setTxHistory(results.flat()))
-      .finally(() => setTxLoading(false))
-  }, [address])
+  // TX history fetch disabled — section hidden, avoid unnecessary DB writes
+  // useEffect(() => { ... fetch /api/tx ... }, [address])
 
   /** Lazy fetch fee transactions when fees tab is active and user is company wallet */
   useEffect(() => {

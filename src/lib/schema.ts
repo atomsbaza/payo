@@ -119,3 +119,13 @@ export const rateLimitLog = pgTable('rate_limit_log', {
 }, (t) => ({
   pk: primaryKey({ columns: [t.key, t.windowStart] }),
 }))
+
+export const feedback = pgTable('feedback', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  name:      text('name').notNull(),
+  email:     text('email').notNull(),
+  category:  text('category').notNull(),
+  message:   text('message').notNull(),
+  ipHash:    text('ip_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})

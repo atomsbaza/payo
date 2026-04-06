@@ -3,7 +3,6 @@ import { createRateLimiter } from '@/lib/rate-limit'
 import { isDatabaseConfigured } from '@/lib/db'
 import {
   getCachedTransactions,
-  upsertTransactions,
   cleanupStaleTransactions,
 } from '@/lib/tx-cache'
 import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
@@ -208,9 +207,6 @@ export async function GET(
     // 2. Cache stale/missing → fetch from Basescan
     try {
       const transactions = await fetchFromBasescan(address, chainIdStr)
-
-      // Upsert results into DB (fire-and-forget to not block response)
-      upsertTransactions(transactions, chainIdNum).catch(() => {/* best-effort */})
 
       return NextResponse.json({ transactions })
     } catch {

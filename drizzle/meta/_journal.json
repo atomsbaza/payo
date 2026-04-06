@@ -36,6 +36,13 @@
       "when": 1775385180452,
       "tag": "0004_normal_ikaris",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775451224620,
+      "tag": "0005_workable_tinkerer",
+      "breakpoints": true
     }
   ]
 }
