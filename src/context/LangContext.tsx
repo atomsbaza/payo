@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
 import { translations, Lang, Translations } from '@/lib/i18n'
 
 type LangContextType = {
@@ -16,20 +16,10 @@ const LangContext = createContext<LangContextType>({
 })
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('en')
-
-  // Sync from localStorage after hydration to avoid mismatch
-  useEffect(() => {
-    const saved = localStorage.getItem('lang') as Lang | null
-    if (saved === 'th' || saved === 'en') setLang(saved)
-  }, [])
+  const lang: Lang = 'en'
 
   const toggleLang = () => {
-    setLang(prev => {
-      const next: Lang = prev === 'th' ? 'en' : 'th'
-      localStorage.setItem('lang', next)
-      return next
-    })
+    // Language toggle disabled — English only
   }
 
   return (
