@@ -9,7 +9,7 @@ import { NonCustodialBadge } from '@/components/NonCustodialBadge'
 import { OpenSourceBadge } from '@/components/OpenSourceBadge'
 import Link from 'next/link'
 
-const GITHUB_REPO_URL = 'https://github.com/pisitkoolplukpol/payo'
+const GITHUB_REPO_URL = 'https://github.com/atomsbaza/payo'
 
 const STEPS = [
   { titleKey: 'step1Title', descKey: 'step1Desc', icon: '🔗' },

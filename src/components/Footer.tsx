@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useLang } from '@/context/LangContext'
 import { OpenSourceBadge } from '@/components/OpenSourceBadge'
 
-const GITHUB_REPO_URL = 'https://github.com/pisitkoolplukpol/payo'
+const GITHUB_REPO_URL = 'https://github.com/atomsbaza/payo'
 
 export function Footer() {
   const { t } = useLang()

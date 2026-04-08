@@ -18,7 +18,7 @@ import { validateEthAddress } from '@/lib/addressValidation'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
 import { calculateFiatValue } from '@/lib/fiatCalc'
 
-const GITHUB_REPO_URL = 'https://github.com/pisitkoolplukpol/payo'
+const GITHUB_REPO_URL = 'https://github.com/atomsbaza/payo'
 
 const EXPIRY_OPTIONS = [
   { value: '0', labelKey: 'expiryNone' as const },
