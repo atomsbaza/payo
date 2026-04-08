@@ -64,10 +64,10 @@ describe('wagmi connector unit tests', () => {
     expect(mockCoinbaseWallet.preference).toBe('smartWalletOnly')
   })
 
-  it("appName is 'Crypto Pay Link'", async () => {
+  it("appName is 'Crypto Transfer Link'", async () => {
     await import('../wagmi')
     expect(capturedDefaultConfigArgs).toBeDefined()
-    expect(capturedDefaultConfigArgs!.appName).toBe('Crypto Pay Link')
+    expect(capturedDefaultConfigArgs!.appName).toBe('Crypto Transfer Link')
   })
 
   it("projectId falls back to 'YOUR_PROJECT_ID' when env var is not set", async () => {

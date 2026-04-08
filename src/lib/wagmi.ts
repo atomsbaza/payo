@@ -21,7 +21,7 @@ const activeChains = getSupportedChains()
   .filter(Boolean) as [Chain, ...Chain[]]
 
 export const config = getDefaultConfig({
-  appName: 'Crypto Pay Link',
+  appName: 'Crypto Transfer Link',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? 'YOUR_PROJECT_ID',
   chains: activeChains,
   ssr: true,

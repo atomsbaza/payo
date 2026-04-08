@@ -15,8 +15,8 @@ export const CRYPTO_PAY_LINK_ADDRESS = getContractAddress(84532);
 export const COMPANY_WALLET = process.env
   .NEXT_PUBLIC_COMPANY_WALLET as `0x${string}`;
 
-/** Default fee rate in basis points (1% = 100bp), used as fallback */
-export const DEFAULT_FEE_RATE = 100n;
+/** Default fee rate in basis points (0% = 0bp), used as fallback */
+export const DEFAULT_FEE_RATE = 0n;
 
 /** ABI for the CryptoPayLinkFee smart contract */
 export const CryptoPayLinkFeeABI = [

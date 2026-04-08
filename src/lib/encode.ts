@@ -42,7 +42,7 @@ export const DEMO_PAYMENT_DATA: PaymentLinkData = {
   address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
   token: 'ETH',
   amount: '0.01',
-  memo: 'Demo Payment',
+  memo: 'Demo Transfer',
   chainId: 84532,
 }
 

@@ -328,9 +328,9 @@ describe('Feature: payment-receipt, Property 7: Locale-appropriate formatting', 
         const pdfText = doc.output()
 
         // English labels from i18n
-        expect(pdfText).toContain('Payer')
+        expect(pdfText).toContain('Sender')
         expect(pdfText).toContain('Recipient')
-        expect(pdfText).toContain('Payment Receipt')
+        expect(pdfText).toContain('Transfer Receipt')
       }),
       { numRuns: 100 },
     )
@@ -346,9 +346,9 @@ describe('Feature: payment-receipt, Property 7: Locale-appropriate formatting', 
         // because the Thai i18n labels are used instead. Thai characters get
         // encoded through WinAnsiEncoding so they won't match Unicode, but
         // the absence of English labels proves Thai labels were selected.
-        expect(pdfText).not.toContain('(Payer)')
+        expect(pdfText).not.toContain('(Sender)')
         expect(pdfText).not.toContain('(Recipient)')
-        expect(pdfText).not.toContain('(Payment Receipt)')
+        expect(pdfText).not.toContain('(Transfer Receipt)')
       }),
       { numRuns: 100 },
     )

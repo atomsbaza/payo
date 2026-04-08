@@ -72,9 +72,9 @@ describe('Feature: embedded-wallet, Property 1: Config includes coinbaseWallet c
         expect(wagmiModule.config).toBeDefined()
         expect(wagmiModule.activeChains).toBeDefined()
 
-        // Requirement 1.4: appName preserved as 'Crypto Pay Link'
+        // Requirement 1.4: appName preserved as 'Crypto Transfer Link'
         expect(capturedDefaultConfigArgs).toBeDefined()
-        expect(capturedDefaultConfigArgs!.appName).toBe('Crypto Pay Link')
+        expect(capturedDefaultConfigArgs!.appName).toBe('Crypto Transfer Link')
 
         // Requirement 1.4: ssr preserved as true
         expect(capturedDefaultConfigArgs!.ssr).toBe(true)

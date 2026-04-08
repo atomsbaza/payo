@@ -8,12 +8,17 @@ import { TokenSelector } from '@/components/TokenSelector'
 import { QRDisplay } from '@/components/QRDisplay'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { Navbar } from '@/components/Navbar'
+import { AcceptanceGate } from '@/components/AcceptanceGate'
+import { NonCustodialBadge } from '@/components/NonCustodialBadge'
+import { OpenSourceBadge } from '@/components/OpenSourceBadge'
 import { useLang } from '@/context/LangContext'
 import { getChain, getDefaultChainId } from '@/lib/chainRegistry'
 import { getDefaultToken } from '@/lib/tokenRegistry'
 import { validateEthAddress } from '@/lib/addressValidation'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
 import { calculateFiatValue } from '@/lib/fiatCalc'
+
+const GITHUB_REPO_URL = 'https://github.com/pisitkoolplukpol/payo'
 
 const EXPIRY_OPTIONS = [
   { value: '0', labelKey: 'expiryNone' as const },
@@ -39,7 +44,26 @@ export default function CreatePage() {
   const [saved, setSaved] = useState(false)
   const [savedUrl, setSavedUrl] = useState('')
   const [createError, setCreateError] = useState('')
+  const [accepted, setAccepted] = useState(false)
 
+  // Restore acceptance state from sessionStorage on mount
+  useEffect(() => {
+    try {
+      setAccepted(sessionStorage.getItem('disclaimerAccepted') === 'true')
+    } catch {
+      // sessionStorage unavailable (e.g. private browsing) — default to false
+    }
+  }, [])
+
+  function handleAccept(val: boolean) {
+    setAccepted(val)
+    try {
+      if (val) sessionStorage.setItem('disclaimerAccepted', 'true')
+      else sessionStorage.removeItem('disclaimerAccepted')
+    } catch {
+      // silent fail
+    }
+  }
   // Dynamic QR — recomputes live as form changes (unsigned preview)
   const liveUrl = useMemo(() => {
     const target = recipientAddress.trim()
@@ -137,6 +161,10 @@ export default function CreatePage() {
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t.createTitle}</h1>
           <p className="text-sm sm:text-base text-gray-400">{t.createSubtitle}</p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <NonCustodialBadge />
+            <OpenSourceBadge repoUrl={GITHUB_REPO_URL} />
+          </div>
         </div>
 
         <div className="space-y-4 sm:space-y-5">
@@ -322,13 +350,21 @@ export default function CreatePage() {
               )}
             </div>
 
+            {/* Acceptance Gate */}
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <AcceptanceGate accepted={accepted} onChange={handleAccept} />
+            </div>
+
             {/* Save to dashboard button */}
             <button
               onClick={handleSave}
+              disabled={!accepted}
               className={`mt-4 w-full py-3 rounded-xl text-sm font-semibold transition-colors ${
                 saved
                   ? 'bg-green-600/20 text-green-400 border border-green-600/30'
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                  : accepted
+                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                  : 'bg-white/10 text-gray-500 cursor-not-allowed'
               }`}
             >
               {saved ? t.saveButton : t.createButton}

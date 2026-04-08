@@ -30,6 +30,7 @@ vi.mock('@/context/LangContext', () => ({
       navHome: 'Home',
       navCreateLink: 'Create Link',
       navCompanyDashboard: 'Dashboard',
+      navContact: 'Contact',
     },
     toggleLang: () => {},
   }),
@@ -37,7 +38,7 @@ vi.mock('@/context/LangContext', () => ({
 
 import { Navbar } from '../Navbar'
 
-const VALID_PATHS = ['/', '/create', '/dashboard'] as const
+const VALID_PATHS = ['/', '/create', '/dashboard', '/contact'] as const
 
 describe('Navbar — Property 5: Navbar active state matches current pathname', () => {
   /**
@@ -59,7 +60,7 @@ describe('Navbar — Property 5: Navbar active state matches current pathname', 
 
         // Get all nav links with data-href attribute
         const links = container.querySelectorAll('a[data-href]')
-        expect(links.length).toBe(3)
+        expect(links.length).toBe(4)
 
         let activeCount = 0
         links.forEach((link) => {

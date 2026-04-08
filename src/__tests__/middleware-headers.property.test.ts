@@ -91,6 +91,7 @@ describe('Feature: nextjs-upgrade, Property 2: Security headers ครบถ้�
         middleware({
           nextUrl: { pathname: path },
           url: `http://localhost:3000${path}`,
+          headers: { get: (_key: string) => null },
         } as any)
 
         for (const header of REQUIRED_HEADERS) {

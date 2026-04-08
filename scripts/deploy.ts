@@ -63,7 +63,7 @@ if (isDirectRun) {
 
   async function main() {
     const companyWallet = "0x8E21cAb519316324B36CE0b9b43E76a578Afd1b0";
-    const feeRate = 100; // 1% in basis points
+    const feeRate = 0; // 0% in basis points
 
     const account = privateKeyToAccount(`0x${PRIVATE_KEY.replace(/^0x/, "")}`);
     console.log("Deployer:", account.address);
@@ -95,7 +95,7 @@ if (isDirectRun) {
 
     console.log("Deploying CryptoPayLinkFee...");
     console.log("  Company wallet:", companyWallet);
-    console.log("  Fee rate:", feeRate, "bp (1%)");
+    console.log("  Fee rate:", feeRate, "bp (0%)");
 
     const hash = await walletClient.deployContract({
       abi: artifact.abi,

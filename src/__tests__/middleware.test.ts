@@ -26,6 +26,7 @@ describe('Security Header Middleware', () => {
     return middleware({
       nextUrl: { pathname },
       url: 'http://localhost:3000' + pathname,
+      headers: { get: (_key: string) => null },
     } as any)
   }
 

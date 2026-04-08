@@ -390,7 +390,7 @@ export default function PayPage({ params }: Props) {
             >
               <p className="text-red-400 text-sm font-semibold">⚠️ Testnet Link</p>
               <p className="text-red-400/80 text-xs mt-1">
-                This payment link uses a testnet chain ({chain?.name}). Testnet tokens have no real value.
+                This transfer link uses a testnet chain ({chain?.name}). Testnet tokens have no real value.
               </p>
             </div>
           )}
@@ -494,26 +494,26 @@ export default function PayPage({ params }: Props) {
                     <p className="text-amber-400 text-xs mb-2">⚠️ Could not read fee rate from contract, using default</p>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Fee rate</span>
+                    <span className="text-gray-500">{t.receiptFeeRate}</span>
                     <span className="text-gray-300">{formatFeePercent(feeRate)}</span>
                   </div>
                   {feeBreakdown.fee === 0n ? (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Fee</span>
-                      <span className="text-green-400">No fee</span>
+                      <span className="text-gray-500">{t.receiptFeeAmount}</span>
+                      <span className="text-green-400">No donation</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Total</span>
+                        <span className="text-gray-500">{t.receiptFeeTotal}</span>
                         <span className="text-gray-200">{formatUnits(feeBreakdown.total, token.decimals)} {data.token}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Fee</span>
+                        <span className="text-gray-500">{t.receiptFeeAmount}</span>
                         <span className="text-amber-400">-{formatUnits(feeBreakdown.fee, token.decimals)} {data.token}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Recipient gets</span>
+                        <span className="text-gray-500">{t.receiptFeeNet}</span>
                         <span className="text-green-400">{formatUnits(feeBreakdown.net, token.decimals)} {data.token}</span>
                       </div>
                     </>
@@ -595,7 +595,7 @@ export default function PayPage({ params }: Props) {
         {/* Self-payment warning */}
         {selfPayment && (
           <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
-            <p className="text-amber-400">⚠️ You are about to pay yourself. This transaction would waste gas fees.</p>
+            <p className="text-amber-400">⚠️ You are about to send to yourself. This transaction would waste gas fees.</p>
           </div>
         )}
 

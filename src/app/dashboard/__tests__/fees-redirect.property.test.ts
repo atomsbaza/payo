@@ -43,6 +43,7 @@ describe('Feature: dashboard-fees-merge, Property 3: Redirect from /dashboard/fe
     return middleware({
       nextUrl: { pathname },
       url,
+      headers: { get: (_key: string) => null },
     } as any)
   }
 

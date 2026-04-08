@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react'
 import { useLang } from '@/context/LangContext'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
+import { DisclaimerSection } from '@/components/DisclaimerSection'
+import { NonCustodialBadge } from '@/components/NonCustodialBadge'
+import { OpenSourceBadge } from '@/components/OpenSourceBadge'
 import Link from 'next/link'
+
+const GITHUB_REPO_URL = 'https://github.com/pisitkoolplukpol/payo'
 
 const STEPS = [
   { titleKey: 'step1Title', descKey: 'step1Desc', icon: '🔗' },
@@ -43,6 +48,10 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-24 text-center max-w-5xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+          <NonCustodialBadge />
+          <OpenSourceBadge repoUrl={GITHUB_REPO_URL} />
+        </div>
         <h1 className="text-3xl sm:text-5xl font-bold mb-4">{t.heroTitle}</h1>
         <p className="text-base sm:text-lg text-gray-400 mb-8 max-w-xl mx-auto">{t.heroSubtitle}</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -102,7 +111,7 @@ export default function LandingPage() {
                   </div>
                   {/* Mock pay button */}
                   <div className="rounded-xl bg-indigo-600 py-2 text-center text-xs font-semibold text-white">
-                    Pay 0.05 ETH
+                    Send 0.05 ETH
                   </div>
                 </div>
                 {/* Secured badge */}
@@ -140,6 +149,11 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Legal Disclaimer */}
+      <section className="px-4 sm:px-6 py-8 max-w-4xl mx-auto">
+        <DisclaimerSection />
       </section>
 
       <Footer />

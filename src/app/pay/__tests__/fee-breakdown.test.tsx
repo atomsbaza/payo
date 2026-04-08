@@ -105,12 +105,12 @@ describe('Payment Page Fee Breakdown', () => {
     await renderPayPage(id)
 
     // Fee breakdown is hidden by default behind a toggle
-    const toggleBtn = await screen.findByRole('button', { name: /show fee breakdown/i })
+    const toggleBtn = await screen.findByRole('button', { name: /show donation details/i })
     expect(toggleBtn).toBeTruthy()
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('false')
 
     // Fee details should not be visible before toggle
-    expect(screen.queryByText('Fee rate')).toBeNull()
+    expect(screen.queryByText('Donation rate')).toBeNull()
 
     // Click toggle to expand
     await act(async () => {
@@ -118,10 +118,10 @@ describe('Payment Page Fee Breakdown', () => {
     })
 
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('true')
-    expect(await screen.findByText('Fee rate')).toBeTruthy()
-    expect(screen.getByText('Total')).toBeTruthy()
-    expect(screen.getByText('Fee')).toBeTruthy()
-    expect(screen.getByText('Recipient gets')).toBeTruthy()
+    expect(await screen.findByText('Donation rate')).toBeTruthy()
+    expect(screen.getByText('Total sent')).toBeTruthy()
+    expect(screen.getByText('Donation')).toBeTruthy()
+    expect(screen.getByText('Recipient receives')).toBeTruthy()
 
     // Fee rate should show "1%" for 100 basis points
     expect(screen.getByText('1%')).toBeTruthy()
@@ -141,12 +141,12 @@ describe('Payment Page Fee Breakdown', () => {
     await renderPayPage(id)
 
     // Click toggle to expand fee details
-    const toggleBtn = await screen.findByRole('button', { name: /show fee breakdown/i })
+    const toggleBtn = await screen.findByRole('button', { name: /show donation details/i })
     await act(async () => {
       fireEvent.click(toggleBtn)
     })
 
-    expect(await screen.findByText('No fee')).toBeTruthy()
+    expect(await screen.findByText('No donation')).toBeTruthy()
     expect(screen.getByText('0%')).toBeTruthy()
   })
 
@@ -166,7 +166,7 @@ describe('Payment Page Fee Breakdown', () => {
     expect(input).toBeTruthy()
 
     // Initially no fee breakdown toggle (no amount entered)
-    expect(screen.queryByRole('button', { name: /show fee breakdown/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /show donation details/i })).toBeNull()
 
     // Enter a custom amount
     await act(async () => {
@@ -174,7 +174,7 @@ describe('Payment Page Fee Breakdown', () => {
     })
 
     // Toggle should now appear
-    const toggleBtn = await screen.findByRole('button', { name: /show fee breakdown/i })
+    const toggleBtn = await screen.findByRole('button', { name: /show donation details/i })
     expect(toggleBtn).toBeTruthy()
 
     // Click toggle to expand
@@ -184,9 +184,9 @@ describe('Payment Page Fee Breakdown', () => {
 
     // Fee breakdown should now appear
     await waitFor(() => {
-      expect(screen.getByText('Fee rate')).toBeTruthy()
+      expect(screen.getByText('Donation rate')).toBeTruthy()
     })
-    expect(screen.getByText('Total')).toBeTruthy()
-    expect(screen.getByText('Recipient gets')).toBeTruthy()
+    expect(screen.getByText('Total sent')).toBeTruthy()
+    expect(screen.getByText('Recipient receives')).toBeTruthy()
   })
 })
