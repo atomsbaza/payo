@@ -1,34 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const GEO_BLOCKED_COUNTRY = 'TH'
-
-const PAYMENT_ROUTES = [
-  '/create',
-  '/pay',
-  '/u',
-  '/api/links',
-  '/api/fees',
-  '/api/tx',
-]
-
-function isPaymentRoute(pathname: string): boolean {
-  return PAYMENT_ROUTES.some(route => pathname.startsWith(route))
-}
-
 export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/dashboard/fees')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  const country = request.headers.get('x-vercel-ip-country')
-  if (country === GEO_BLOCKED_COUNTRY && isPaymentRoute(request.nextUrl.pathname)) {
-    return new NextResponse(
-      JSON.stringify({ error: 'Service not available in your region.' }),
-      {
-        status: 451,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    )
   }
 
   const response = NextResponse.next()
