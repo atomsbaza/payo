@@ -289,7 +289,7 @@ export const translations = {
     addressPlaceholder: '0x...',
     useMyWallet: 'Use Mine',
     labelToken: 'Token',
-    labelAmount: 'Amount (leave blank to let payer decide)',
+    labelAmount: 'Amount (leave blank to let sender decide)',
     amountPlaceholder: '0.00',
     labelMemo: 'Note (optional)',
     memoPlaceholder: 'e.g. Birthday gift, coffee, donation',
