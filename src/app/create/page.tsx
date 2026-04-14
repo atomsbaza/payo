@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
-import { encodePaymentLink } from '@/lib/encode'
+import { encodeTransferLink } from '@/lib/encode'
 import { ChainSelector } from '@/components/ChainSelector'
 import { TokenSelector } from '@/components/TokenSelector'
 import { QRDisplay } from '@/components/QRDisplay'
@@ -71,7 +71,7 @@ export default function CreatePage() {
     const expiresAt = expiryDays !== '0'
       ? PAGE_LOAD_TIME + Number(expiryDays) * 24 * 60 * 60 * 1000
       : undefined
-    const encoded = encodePaymentLink({
+    const encoded = encodeTransferLink({
       address: target,
       token,
       amount: amount.trim(),

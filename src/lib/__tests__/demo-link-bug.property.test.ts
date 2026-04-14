@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { decodePaymentLink, isDemoLink, DEMO_PAYMENT_DATA } from '../encode'
+import { decodeTransferLink, isDemoLink, DEMO_TRANSFER_DATA } from '../encode'
 
 /**
  * Bug Condition Exploration Test — Demo Page Fix (Post-Fix)
@@ -15,7 +15,7 @@ import { decodePaymentLink, isDemoLink, DEMO_PAYMENT_DATA } from '../encode'
  */
 describe('Bug Condition: Demo ID — fixed behavior', () => {
   it('decodePaymentLink("demo") still returns null (function unchanged)', () => {
-    const result = decodePaymentLink('demo')
+    const result = decodeTransferLink('demo')
     expect(result).toBe(null)
   })
 
@@ -34,7 +34,7 @@ describe('Bug Condition: Demo ID — fixed behavior', () => {
         fc.constant('demo'),
         (id: string) => {
           // This is the actual fix logic used in pay page and API route
-          const result = isDemoLink(id) ? DEMO_PAYMENT_DATA : decodePaymentLink(id)
+          const result = isDemoLink(id) ? DEMO_TRANSFER_DATA : decodeTransferLink(id)
 
           expect(result).not.toBe(null)
           expect(result).toHaveProperty('address')

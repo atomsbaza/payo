@@ -14,7 +14,7 @@ export const users = pgTable('users', {
   lastSeen:    timestamp('last_seen', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const paymentLinks = pgTable('payment_links', {
+export const transferLinks = pgTable('transfer_links', {
   id:            uuid('id').primaryKey().defaultRandom(),
   linkId:        text('link_id').notNull().unique(),
   ownerAddress:  text('owner_address').notNull(),
@@ -37,7 +37,7 @@ export const paymentLinks = pgTable('payment_links', {
 export const linkEvents = pgTable('link_events', {
   id:           uuid('id').primaryKey().defaultRandom(),
   linkId:       text('link_id').notNull()
-                  .references(() => paymentLinks.linkId, { onDelete: 'cascade' }),
+                  .references(() => transferLinks.linkId, { onDelete: 'cascade' }),
   eventType:    text('event_type').notNull(),
   payerAddress: text('payer_address'),
   txHash:       text('tx_hash'),

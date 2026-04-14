@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { decodePaymentLink, isDemoLink, DEMO_PAYMENT_DATA } from '@/lib/encode'
-import { validatePaymentLink } from '@/lib/validate'
-import { verifyPaymentLink } from '@/lib/hmac'
+import { decodeTransferLink, isDemoLink, DEMO_TRANSFER_DATA } from '@/lib/encode'
+import { validateTransferLink } from '@/lib/validate'
+import { verifyTransferLink } from '@/lib/hmac'
 import { isDatabaseConfigured, getDb } from '@/lib/db'
-import { paymentLinks, linkEvents } from '@/lib/schema'
+import { transferLinks, linkEvents } from '@/lib/schema'
 import { eq, and, sql } from 'drizzle-orm'
 import { logLinkEvent } from '@/lib/link-events'
 import { upsertTransactions } from '@/lib/tx-cache'
 import { createRateLimiter } from '@/lib/rate-limit'
 import { dispatchWebhook } from '@/lib/webhook'
-import { buildPaymentCompletedPayload, buildLinkDeactivatedPayload } from '@/lib/webhookPayload'
+import { buildTransferCompletedPayload, buildLinkDeactivatedPayload } from '@/lib/webhookPayload'
 import { dispatchPush } from '@/lib/push'
 
 const TX_HASH_RE = /^0x[a-fA-F0-9]{64}$/
@@ -17,7 +17,7 @@ const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
 
 const postLimiter = createRateLimiter(5, 60_000)
 
-// GET /api/links/[id] — decode and verify a payment link
+// GET /api/links/[id] — decode and verify a transfer link
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -32,7 +32,7 @@ export async function GET(
   if (isDemoLink(id)) {
     return NextResponse.json({
       id,
-      data: DEMO_PAYMENT_DATA,
+      data: DEMO_TRANSFER_DATA,
       verified: true,
       tampered: false,
       isActive: true,
@@ -47,8 +47,8 @@ export async function GET(
       const db = getDb()
       const rows = await db
         .select()
-        .from(paymentLinks)
-        .where(eq(paymentLinks.linkId, id))
+        .from(transferLinks)
+        .where(eq(transferLinks.linkId, id))
         .limit(1)
 
       if (rows.length > 0) {
@@ -56,9 +56,9 @@ export async function GET(
 
         // Increment view_count atomically
         await db
-          .update(paymentLinks)
-          .set({ viewCount: sql`${paymentLinks.viewCount} + 1` })
-          .where(eq(paymentLinks.linkId, id))
+          .update(transferLinks)
+          .set({ viewCount: sql`${transferLinks.viewCount} + 1` })
+          .where(eq(transferLinks.linkId, id))
 
         // Fire-and-forget: log 'viewed' event
         logLinkEvent({
@@ -68,7 +68,7 @@ export async function GET(
           userAgent,
         }).catch(() => {})
 
-        // Reconstruct PaymentLinkData from DB row
+        // Reconstruct TransferLinkData from DB row
         // expiresAt is stored as Date in DB; return as ISO string for the API response
         const data = {
           address: row.recipient,
@@ -97,20 +97,20 @@ export async function GET(
   }
 
   // 3. HMAC decode fallback (existing logic)
-  const data = decodePaymentLink(id)
+  const data = decodeTransferLink(id)
 
   if (!data) {
     return NextResponse.json({ error: 'Invalid or expired link' }, { status: 404 })
   }
 
-  // Validate payment link data
-  const validation = validatePaymentLink(data)
+  // Validate transfer link data
+  const validation = validateTransferLink(data)
   if (!validation.valid) {
     return NextResponse.json({ error: validation.reason }, { status: 400 })
   }
 
   // Verify HMAC signature
-  const hmacValid = verifyPaymentLink(data)
+  const hmacValid = verifyTransferLink(data)
 
   // Fire-and-forget: log 'viewed' event for fallback path
   logLinkEvent({
@@ -196,8 +196,8 @@ export async function POST(
   // Check link exists
   const rows = await db
     .select()
-    .from(paymentLinks)
-    .where(eq(paymentLinks.linkId, id))
+    .from(transferLinks)
+    .where(eq(transferLinks.linkId, id))
     .limit(1)
 
   if (rows.length === 0) {
@@ -240,8 +240,8 @@ export async function POST(
     { linkId: id, txHash },
   ).catch(() => {})
 
-  // Fire-and-forget: dispatch payment_completed webhook
-  dispatchWebhook(link.ownerAddress, buildPaymentCompletedPayload(id, {
+  // Fire-and-forget: dispatch transfer_completed webhook
+  dispatchWebhook(link.ownerAddress, buildTransferCompletedPayload(id, {
     payerAddress,
     recipientAddress: link.recipient,
     amount: amount ?? '0',
@@ -255,7 +255,7 @@ export async function POST(
     // Single-use: deactivate atomically with pay_count increment
     // WHERE is_active = true guards against race conditions
     await db
-      .update(paymentLinks)
+      .update(transferLinks)
       .set({
         payCount: sql`pay_count + 1`,
         isActive: false,
@@ -263,8 +263,8 @@ export async function POST(
       })
       .where(
         and(
-          eq(paymentLinks.linkId, id),
-          eq(paymentLinks.isActive, true),
+          eq(transferLinks.linkId, id),
+          eq(transferLinks.isActive, true),
         ),
       )
 
@@ -276,9 +276,9 @@ export async function POST(
   } else {
     // Multi-use: increment pay_count only (existing behavior)
     await db
-      .update(paymentLinks)
+      .update(transferLinks)
       .set({ payCount: sql`pay_count + 1` })
-      .where(eq(paymentLinks.linkId, id))
+      .where(eq(transferLinks.linkId, id))
   }
 
   // Fire-and-forget: upsert transaction record

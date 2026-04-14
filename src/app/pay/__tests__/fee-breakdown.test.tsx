@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { Suspense } from 'react'
-import { encodePaymentLink } from '@/lib/encode'
+import { encodeTransferLink } from '@/lib/encode'
 import { translations } from '@/lib/i18n'
 
 // --- Mocks ---
@@ -94,7 +94,7 @@ describe('Payment Page Fee Breakdown', () => {
    */
 
   it('displays fee breakdown for a fixed amount (Req 4.1)', async () => {
-    const id = encodePaymentLink({
+    const id = encodeTransferLink({
       address: '0x1234567890abcdef1234567890abcdef12345678',
       token: 'ETH',
       amount: '1.0',
@@ -130,7 +130,7 @@ describe('Payment Page Fee Breakdown', () => {
   it('displays "No fee" when fee is zero (Req 4.4)', async () => {
     mockFeeRate = 0n
 
-    const id = encodePaymentLink({
+    const id = encodeTransferLink({
       address: '0x1234567890abcdef1234567890abcdef12345678',
       token: 'ETH',
       amount: '1.0',
@@ -151,7 +151,7 @@ describe('Payment Page Fee Breakdown', () => {
   })
 
   it('recalculates fee breakdown when custom amount is entered (Req 4.2)', async () => {
-    const id = encodePaymentLink({
+    const id = encodeTransferLink({
       address: '0x1234567890abcdef1234567890abcdef12345678',
       token: 'ETH',
       amount: '',

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import {
-  encodePaymentLink,
-  decodePaymentLink,
-  type PaymentLinkData,
+  encodeTransferLink,
+  decodeTransferLink,
+  type TransferLinkData,
 } from '@/lib/encode'
-import { signPaymentLink, verifyPaymentLink } from '@/lib/hmac'
+import { signTransferLink, verifyTransferLink } from '@/lib/hmac'
 
 /**
  * Feature: database-integration, Property 4: Backward compatible link retrieval
@@ -63,15 +63,15 @@ const memoArb = fc.string({ minLength: 0, maxLength: 200, unit: 'grapheme' })
  * 3. Return { data, verified, tampered }
  */
 function retrieveLegacyLink(linkId: string): {
-  data: PaymentLinkData | null
+  data: TransferLinkData | null
   verified: boolean
   tampered: boolean
 } {
-  const data = decodePaymentLink(linkId)
+  const data = decodeTransferLink(linkId)
   if (!data) {
     return { data: null, verified: false, tampered: false }
   }
-  const hmacValid = verifyPaymentLink(data)
+  const hmacValid = verifyTransferLink(data)
   return { data, verified: hmacValid, tampered: !hmacValid }
 }
 
@@ -92,12 +92,12 @@ describe('Feature: database-integration, Property 4: Backward compatible link re
         memoArb,
         (address, { chainId, token }, amount, memo) => {
           // 1. Create payment link data and sign with HMAC
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
-          const signature = signPaymentLink(data)
-          const signedData: PaymentLinkData = { ...data, signature }
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
+          const signature = signTransferLink(data)
+          const signedData: TransferLinkData = { ...data, signature }
 
           // 2. Encode to link ID (base64url)
-          const linkId = encodePaymentLink(signedData)
+          const linkId = encodeTransferLink(signedData)
           expect(linkId).toBeTruthy()
 
           // 3. Simulate the fallback retrieval path (not in DB)
@@ -141,17 +141,17 @@ describe('Feature: database-integration, Property 4: Backward compatible link re
           fc.pre(differentAddress !== address)
 
           // Sign with original address
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
-          const signature = signPaymentLink(data)
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
+          const signature = signTransferLink(data)
 
           // Tamper: swap in a different address but keep the original signature
-          const tamperedData: PaymentLinkData = {
+          const tamperedData: TransferLinkData = {
             ...data,
             address: differentAddress,
             signature,
           }
 
-          const linkId = encodePaymentLink(tamperedData)
+          const linkId = encodeTransferLink(tamperedData)
           const result = retrieveLegacyLink(linkId)
 
           expect(result.data).not.toBeNull()
@@ -176,10 +176,10 @@ describe('Feature: database-integration, Property 4: Backward compatible link re
         amountArb,
         memoArb,
         (address, { chainId, token }, amount, memo) => {
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
-          const signature = signPaymentLink(data)
-          const signedData: PaymentLinkData = { ...data, signature }
-          const linkId = encodePaymentLink(signedData)
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
+          const signature = signTransferLink(data)
+          const signedData: TransferLinkData = { ...data, signature }
+          const linkId = encodeTransferLink(signedData)
 
           const result = retrieveLegacyLink(linkId)
 

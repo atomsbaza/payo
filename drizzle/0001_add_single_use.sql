@@ -1,1 +1,1 @@
-ALTER TABLE "payment_links" ADD COLUMN "single_use" boolean DEFAULT false NOT NULL;
+ALTER TABLE "transfer_links" ADD COLUMN "single_use" boolean DEFAULT false NOT NULL;

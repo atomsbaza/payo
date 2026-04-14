@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
-import type { PaymentLinkData } from './encode'
+import type { TransferLinkData } from './encode'
 import { shortAddress } from './encode'
 
 const SITE_NAME = 'Crypto Pay Link'
 const DEFAULT_OG_IMAGE = '/og-image.png'
 
 export type OgInput = {
-  data: PaymentLinkData | null
+  data: TransferLinkData | null
   url: string
 }
 

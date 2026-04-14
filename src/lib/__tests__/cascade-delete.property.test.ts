@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import { getTableConfig } from 'drizzle-orm/pg-core'
-import { linkEvents, paymentLinks } from '../schema'
+import { linkEvents, transferLinks } from '../schema'
 
 /**
  * Feature: database-integration, Property 14: Cascade delete of link events
@@ -25,7 +25,7 @@ function getLinkEventsForeignKeys() {
 }
 
 function getPaymentLinksTableName() {
-  const config = getTableConfig(paymentLinks)
+  const config = getTableConfig(transferLinks)
   return config.name
 }
 
@@ -51,18 +51,18 @@ describe('Feature: database-integration, Property 14: Cascade delete of link eve
    *
    * **Validates: Requirements 7.5**
    */
-  it('linkEvents.linkId FK references paymentLinks with onDelete cascade for any link with events', () => {
+  it('linkEvents.linkId FK references transferLinks with onDelete cascade for any link with events', () => {
     const foreignKeys = getLinkEventsForeignKeys()
     const parentTableName = getPaymentLinksTableName()
 
     // There should be at least one FK on linkEvents
     expect(foreignKeys.length).toBeGreaterThanOrEqual(1)
 
-    // Find the FK that targets paymentLinks
+    // Find the FK that targets transferLinks
     const cascadeFK = foreignKeys.find((fk) => {
       const fkName = fk.getName()
       // Drizzle FK names contain the referenced table name
-      return fkName.includes('payment_links')
+      return fkName.includes('transfer_links')
     })
 
     expect(cascadeFK).toBeDefined()
@@ -79,7 +79,7 @@ describe('Feature: database-integration, Property 14: Cascade delete of link eve
           // 1. Verify FK exists and targets the correct parent table
           expect(cascadeFK).toBeDefined()
           const fkName = cascadeFK!.getName()
-          expect(fkName).toContain('payment_links')
+          expect(fkName).toContain('transfer_links')
 
           // 2. Verify the FK references the linkId column on paymentLinks
           // The FK name in Drizzle follows the pattern:
@@ -91,8 +91,8 @@ describe('Feature: database-integration, Property 14: Cascade delete of link eve
           const onDeleteAction = (cascadeFK as unknown as Record<string, unknown>).onDelete
           expect(onDeleteAction).toBe('cascade')
 
-          // 4. The parent table name must be 'payment_links'
-          expect(parentTableName).toBe('payment_links')
+          // 4. The parent table name must be 'transfer_links'
+          expect(parentTableName).toBe('transfer_links')
 
           // 5. Verify the scenario: a link with `eventCount` events
           //    would have all events removed on parent deletion

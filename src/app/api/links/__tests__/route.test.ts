@@ -173,8 +173,8 @@ describe('Property 1: API tampered field is the logical inverse of verified', ()
   it('tampered === !verified for correctly signed, tampered, and unsigned links', async () => {
     // Import modules inside the test to use the mocked rate-limiter
     const { GET } = await import('../[id]/route')
-    const { encodePaymentLink } = await import('@/lib/encode')
-    const { signPaymentLink } = await import('@/lib/hmac')
+    const { encodeTransferLink: encodePaymentLink } = await import('@/lib/encode')
+    const { signTransferLink: signPaymentLink } = await import('@/lib/hmac')
     const { NextRequest } = await import('next/server')
 
     // Arbitrary for valid Ethereum addresses (0x + 40 hex chars)

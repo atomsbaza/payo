@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { encodePaymentLink, decodePaymentLink, type PaymentLinkData } from '../encode'
+import { encodeTransferLink, decodeTransferLink, type TransferLinkData } from '../encode'
 import { getSupportedChains } from '../chainRegistry'
 import { getTokensForChain } from '../tokenRegistry'
 
@@ -42,14 +42,14 @@ const paymentLinkDataArb = fc.record({
   amount: amountArb,
   memo: memoArb,
   chainId: fc.constant(84532),
-}) as fc.Arbitrary<PaymentLinkData>
+}) as fc.Arbitrary<TransferLinkData>
 
 describe('encode/decode round-trip', () => {
   it('Property 6: decoding an encoded PaymentLinkData returns equivalent data', () => {
     fc.assert(
       fc.property(paymentLinkDataArb, (data) => {
-        const encoded = encodePaymentLink(data)
-        const decoded = decodePaymentLink(encoded)
+        const encoded = encodeTransferLink(data)
+        const decoded = decodeTransferLink(encoded)
 
         expect(decoded).not.toBeNull()
         expect(decoded!.address).toBe(data.address)
@@ -74,12 +74,12 @@ describe('encode/decode round-trip', () => {
         fc.array(hexCharArb, { minLength: 64, maxLength: 64 }).map((c) => c.join('')),
         { nil: undefined },
       ),
-    }) as fc.Arbitrary<PaymentLinkData>
+    }) as fc.Arbitrary<TransferLinkData>
 
     fc.assert(
       fc.property(withOptionalsArb, (data) => {
-        const encoded = encodePaymentLink(data)
-        const decoded = decodePaymentLink(encoded)
+        const encoded = encodeTransferLink(data)
+        const decoded = decodeTransferLink(encoded)
 
         expect(decoded).not.toBeNull()
         expect(decoded!.address).toBe(data.address)
@@ -123,7 +123,7 @@ describe('encode/decode round-trip (multi-chain)', () => {
 
   const chainIdArb = fc.constantFrom(...getSupportedChains().map((c) => c.chainId))
 
-  const multiChainPaymentLinkArb: fc.Arbitrary<PaymentLinkData> = chainIdArb.chain(
+  const multiChainPaymentLinkArb: fc.Arbitrary<TransferLinkData> = chainIdArb.chain(
     (chainId) =>
       fc.record({
         address: ethAddressArb,
@@ -131,14 +131,14 @@ describe('encode/decode round-trip (multi-chain)', () => {
         amount: amountArb,
         memo: memoArb,
         chainId: fc.constant(chainId),
-      }) as fc.Arbitrary<PaymentLinkData>,
+      }) as fc.Arbitrary<TransferLinkData>,
   )
 
   it('Property 13: decoding an encoded PaymentLinkData returns deeply equal data with correct types', () => {
     fc.assert(
       fc.property(multiChainPaymentLinkArb, (data) => {
-        const encoded = encodePaymentLink(data)
-        const decoded = decodePaymentLink(encoded)
+        const encoded = encodeTransferLink(data)
+        const decoded = decodeTransferLink(encoded)
 
         expect(decoded).not.toBeNull()
         expect(decoded!.address).toBe(data.address)

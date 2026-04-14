@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { validatePaymentLink } from '../validate'
+import { validateTransferLink } from '../validate'
 import { getSupportedChains, getChain } from '../chainRegistry'
 import { getTokensForChain, getToken } from '../tokenRegistry'
 
@@ -41,7 +41,7 @@ describe('validatePaymentLink', () => {
   it('all valid (chainId, symbol) pairs from registry pass validation', () => {
     fc.assert(
       fc.property(validPaymentLinkArb, (data) => {
-        const result = validatePaymentLink(data)
+        const result = validateTransferLink(data)
         expect(result.valid).toBe(true)
       }),
       { numRuns: 100 }
@@ -54,7 +54,7 @@ describe('validatePaymentLink', () => {
         fc.property(
           fc.string().filter((s) => !/^0x[a-fA-F0-9]{40}$/.test(s)),
           (badAddress) => {
-            const result = validatePaymentLink({
+            const result = validateTransferLink({
               address: badAddress,
               token: 'ETH',
               amount: '1',
@@ -80,7 +80,7 @@ describe('validatePaymentLink', () => {
             )
           ),
           ([chainId, badToken]) => {
-            const result = validatePaymentLink({
+            const result = validateTransferLink({
               address: '0x' + 'a'.repeat(40),
               token: badToken,
               amount: '1',
@@ -100,7 +100,7 @@ describe('validatePaymentLink', () => {
     it('rejects invalid amount', () => {
       const invalidAmounts = ['abc', '-1', '0', '1000001', 'NaN']
       for (const amount of invalidAmounts) {
-        const result = validatePaymentLink({
+        const result = validateTransferLink({
           address: '0x' + 'a'.repeat(40),
           token: 'ETH',
           amount,
@@ -118,7 +118,7 @@ describe('validatePaymentLink', () => {
         fc.property(
           fc.integer({ min: 1, max: 999999 }).filter((n) => !getChain(n)),
           (badChainId) => {
-            const result = validatePaymentLink({
+            const result = validateTransferLink({
               address: '0x' + 'a'.repeat(40),
               token: 'ETH',
               amount: '1',
@@ -136,7 +136,7 @@ describe('validatePaymentLink', () => {
 
   describe('unit tests: multi-chain specific cases', () => {
     it('accepts ETH on Base Sepolia (existing valid case)', () => {
-      const result = validatePaymentLink({
+      const result = validateTransferLink({
         address: '0x' + 'a'.repeat(40),
         token: 'ETH',
         amount: '1',
@@ -148,7 +148,7 @@ describe('validatePaymentLink', () => {
 
     it('accepts ETH on all supported chains', () => {
       for (const chainId of supportedChainIds) {
-        const result = validatePaymentLink({
+        const result = validateTransferLink({
           address: '0x' + 'a'.repeat(40),
           token: 'ETH',
           amount: '1',
@@ -160,7 +160,7 @@ describe('validatePaymentLink', () => {
     })
 
     it('rejects unsupported chainId 999999 with HTTP 400 reason', () => {
-      const result = validatePaymentLink({
+      const result = validateTransferLink({
         address: '0x' + 'a'.repeat(40),
         token: 'ETH',
         amount: '1',
@@ -172,7 +172,7 @@ describe('validatePaymentLink', () => {
     })
 
     it('rejects cbBTC on Optimism (token not on chain)', () => {
-      const result = validatePaymentLink({
+      const result = validateTransferLink({
         address: '0x' + 'a'.repeat(40),
         token: 'cbBTC',
         amount: '1',
@@ -184,7 +184,7 @@ describe('validatePaymentLink', () => {
     })
 
     it('rejects USDT on Base Sepolia (testnet)', () => {
-      const result = validatePaymentLink({
+      const result = validateTransferLink({
         address: '0x' + 'a'.repeat(40),
         token: 'USDT',
         amount: '1',
@@ -196,7 +196,7 @@ describe('validatePaymentLink', () => {
     })
 
     it('accepts USDT on Base Mainnet', () => {
-      const result = validatePaymentLink({
+      const result = validateTransferLink({
         address: '0x' + 'a'.repeat(40),
         token: 'USDT',
         amount: '1',

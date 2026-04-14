@@ -58,7 +58,7 @@ export function QRDisplay({ url, disableCopy }: Props) {
       canvas.toBlob((b) => resolve(b!), 'image/png')
     )
 
-    const file = new File([pngBlob], 'payment-qr.png', { type: 'image/png' })
+    const file = new File([pngBlob], 'transfer-qr.png', { type: 'image/png' })
 
     // Web Share API level 2 (files) or fallback to download
     if (navigator.canShare?.({ files: [file] })) {
@@ -66,7 +66,7 @@ export function QRDisplay({ url, disableCopy }: Props) {
     } else {
       const a = document.createElement('a')
       a.href = URL.createObjectURL(pngBlob)
-      a.download = 'payment-qr.png'
+      a.download = 'transfer-qr.png'
       a.click()
       URL.revokeObjectURL(a.href)
     }

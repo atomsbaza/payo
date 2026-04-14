@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import {
-  encodePaymentLink,
-  decodePaymentLink,
-  type PaymentLinkData,
+  encodeTransferLink,
+  decodeTransferLink,
+  type TransferLinkData,
 } from '@/lib/encode'
-import { signPaymentLink, verifyPaymentLink } from '@/lib/hmac'
+import { signTransferLink, verifyTransferLink } from '@/lib/hmac'
 
 /**
  * Feature: database-integration, Property 15: API response format preservation
@@ -68,10 +68,10 @@ function simulateCreationResponse(input: {
   memo: string
   chainId: number
 }): Record<string, unknown> {
-  const data: PaymentLinkData = { ...input }
-  const signature = signPaymentLink(data)
-  const signedData: PaymentLinkData = { ...data, signature }
-  const id = encodePaymentLink(signedData)
+  const data: TransferLinkData = { ...input }
+  const signature = signTransferLink(data)
+  const signedData: TransferLinkData = { ...data, signature }
+  const id = encodeTransferLink(signedData)
   const url = `https://example.com/pay/${id}`
   return { id, url, data: signedData }
 }
@@ -81,11 +81,11 @@ function simulateCreationResponse(input: {
  * Decodes the link ID, verifies HMAC, returns { id, data, verified, tampered }.
  */
 function simulateRetrievalResponse(linkId: string): Record<string, unknown> {
-  const data = decodePaymentLink(linkId)
+  const data = decodeTransferLink(linkId)
   if (!data) {
     return { error: 'Invalid or expired link' }
   }
-  const hmacValid = verifyPaymentLink(data)
+  const hmacValid = verifyTransferLink(data)
   return { id: linkId, data, verified: hmacValid, tampered: !hmacValid }
 }
 
@@ -165,10 +165,10 @@ describe('Feature: database-integration, Property 15: API response format preser
         memoArb,
         (address, { chainId, token }, amount, memo) => {
           // Create a valid signed link first
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
-          const signature = signPaymentLink(data)
-          const signedData: PaymentLinkData = { ...data, signature }
-          const linkId = encodePaymentLink(signedData)
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
+          const signature = signTransferLink(data)
+          const signedData: TransferLinkData = { ...data, signature }
+          const linkId = encodeTransferLink(signedData)
 
           // Simulate retrieval
           const response = simulateRetrievalResponse(linkId)
@@ -212,14 +212,14 @@ describe('Feature: database-integration, Property 15: API response format preser
           fc.pre(differentAddress !== address)
 
           // Sign with original address, then tamper
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
-          const signature = signPaymentLink(data)
-          const tamperedData: PaymentLinkData = {
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
+          const signature = signTransferLink(data)
+          const tamperedData: TransferLinkData = {
             ...data,
             address: differentAddress,
             signature,
           }
-          const linkId = encodePaymentLink(tamperedData)
+          const linkId = encodeTransferLink(tamperedData)
 
           // Simulate retrieval of tampered link
           const response = simulateRetrievalResponse(linkId)

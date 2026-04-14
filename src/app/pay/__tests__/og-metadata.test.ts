@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
 import { generateOgMetadata } from '@/lib/og-metadata'
-import { shortAddress, type PaymentLinkData } from '@/lib/encode'
+import { shortAddress, type TransferLinkData } from '@/lib/encode'
 
 /**
  * Property 7: OG metadata generation from payment data
@@ -36,7 +36,7 @@ const arbPaymentData = fc.record({
 describe('Property 7: OG metadata generation from payment data', () => {
   it('og:title follows the correct format based on amount presence', () => {
     fc.assert(
-      fc.property(arbPaymentData, (data: PaymentLinkData) => {
+      fc.property(arbPaymentData, (data: TransferLinkData) => {
         const meta = generateOgMetadata({ data, url: `/pay/test-id` })
         const ogTitle = (meta.openGraph as { title?: string })?.title ?? ''
 
@@ -52,7 +52,7 @@ describe('Property 7: OG metadata generation from payment data', () => {
 
   it('og:description contains memo (if present) and short recipient address', () => {
     fc.assert(
-      fc.property(arbPaymentData, (data: PaymentLinkData) => {
+      fc.property(arbPaymentData, (data: TransferLinkData) => {
         const meta = generateOgMetadata({ data, url: `/pay/test-id` })
         const ogDesc = (meta.openGraph as { description?: string })?.description ?? ''
         const short = shortAddress(data.address)
@@ -68,7 +68,7 @@ describe('Property 7: OG metadata generation from payment data', () => {
 
   it('required OG fields are always present', () => {
     fc.assert(
-      fc.property(arbPaymentData, (data: PaymentLinkData) => {
+      fc.property(arbPaymentData, (data: TransferLinkData) => {
         const url = `/pay/some-id`
         const meta = generateOgMetadata({ data, url })
         const og = meta.openGraph as { title?: string; description?: string; url?: string; images?: unknown[] }

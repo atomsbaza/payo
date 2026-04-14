@@ -3,11 +3,11 @@ import * as fc from 'fast-check'
 import { NextRequest } from 'next/server'
 import { createRateLimiter } from '@/lib/rate-limit'
 import {
-  encodePaymentLink,
-  decodePaymentLink,
-  type PaymentLinkData,
+  encodeTransferLink,
+  decodeTransferLink,
+  type TransferLinkData,
 } from '@/lib/encode'
-import { signPaymentLink, verifyPaymentLink } from '@/lib/hmac'
+import { signTransferLink, verifyTransferLink } from '@/lib/hmac'
 import { hashIp, truncateUserAgent } from '@/lib/link-events'
 
 /**
@@ -352,25 +352,25 @@ describe('Preservation: Post-Payment Data Loss Bugfix', () => {
             fc.pre(differentAddress !== address)
 
             // Sign with original address
-            const data: PaymentLinkData = { address, token, amount, memo, chainId }
-            const signature = signPaymentLink(data)
+            const data: TransferLinkData = { address, token, amount, memo, chainId }
+            const signature = signTransferLink(data)
 
             // Tamper: swap address but keep original signature
-            const tamperedData: PaymentLinkData = {
+            const tamperedData: TransferLinkData = {
               ...data,
               address: differentAddress,
               signature,
             }
 
             // Verification must fail
-            expect(verifyPaymentLink(tamperedData)).toBe(false)
+            expect(verifyTransferLink(tamperedData)).toBe(false)
 
             // The GET handler would log "tamper_blocked" for this case
             // We verify the detection condition: !verifyPaymentLink(data)
-            const linkId = encodePaymentLink(tamperedData)
-            const decoded = decodePaymentLink(linkId)
+            const linkId = encodeTransferLink(tamperedData)
+            const decoded = decodeTransferLink(linkId)
             expect(decoded).not.toBeNull()
-            expect(verifyPaymentLink(decoded!)).toBe(false)
+            expect(verifyTransferLink(decoded!)).toBe(false)
           },
         ),
         { numRuns: 100 },

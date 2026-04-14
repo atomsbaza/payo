@@ -184,7 +184,7 @@ const ownerAddressArb = fc
   .map(chars => '0x' + chars.join(''))
 
 const webhookPayloadArb: fc.Arbitrary<WebhookPayload> = fc.record({
-  event: fc.constantFrom('payment_completed' as const, 'link_created' as const, 'link_deactivated' as const, 'test' as const),
+  event: fc.constantFrom('transfer_completed' as const, 'link_created' as const, 'link_deactivated' as const, 'test' as const),
   timestamp: fc.integer({ min: 0, max: 4102444800000 }).map(ms => new Date(ms).toISOString()),
   linkId: fc.string({ minLength: 1 }),
   data: fc.record({

@@ -61,10 +61,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "link_events_link_id_payment_links_link_id_fk": {
-          "name": "link_events_link_id_payment_links_link_id_fk",
+        "link_events_link_id_transfer_links_link_id_fk": {
+          "name": "link_events_link_id_transfer_links_link_id_fk",
           "tableFrom": "link_events",
-          "tableTo": "payment_links",
+          "tableTo": "transfer_links",
           "columnsFrom": [
             "link_id"
           ],
@@ -81,8 +81,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.payment_links": {
-      "name": "payment_links",
+    "public.transfer_links": {
+      "name": "transfer_links",
       "schema": "",
       "columns": {
         "id": {
@@ -199,8 +199,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "payment_links_link_id_unique": {
-          "name": "payment_links_link_id_unique",
+        "transfer_links_link_id_unique": {
+          "name": "transfer_links_link_id_unique",
           "nullsNotDistinct": false,
           "columns": [
             "link_id"

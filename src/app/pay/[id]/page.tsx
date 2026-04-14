@@ -6,8 +6,8 @@ import { mainnet } from 'wagmi/chains'
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit'
 import { parseEther, parseUnits, formatUnits } from 'viem'
 import confetti from 'canvas-confetti'
-import { decodePaymentLink, isLinkExpired, shortAddress, isDemoLink, DEMO_PAYMENT_DATA } from '@/lib/encode'
-import { validatePaymentLink } from '@/lib/validate'
+import { decodeTransferLink, isLinkExpired, shortAddress, isDemoLink, DEMO_TRANSFER_DATA } from '@/lib/encode'
+import { validateTransferLink } from '@/lib/validate'
 import { isSelfPayment } from '@/lib/self-payment'
 import { ERC20_ABI } from '@/lib/tokens'
 import { getToken } from '@/lib/tokenRegistry'
@@ -49,7 +49,7 @@ export default function PayPage({ params }: Props) {
   const [feeExpanded, setFeeExpanded] = useState(false)
   const [linkDeactivated, setLinkDeactivated] = useState(false)
 
-  const data = isDemoLink(id) ? DEMO_PAYMENT_DATA : decodePaymentLink(id)
+  const data = isDemoLink(id) ? DEMO_TRANSFER_DATA : decodeTransferLink(id)
 
   // ENS name resolution (mainnet only)
   const { data: ensName } = useEnsName({
@@ -59,7 +59,7 @@ export default function PayPage({ params }: Props) {
   })
 
   // Validate payment link data
-  const validation = data ? validatePaymentLink(data) : null
+  const validation = data ? validateTransferLink(data) : null
   const isValidData = validation?.valid === true
 
   const token = data ? getToken(data.chainId, data.token) : undefined

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, cleanup } from '@testing-library/react'
 import { Suspense } from 'react'
-import { encodePaymentLink } from '@/lib/encode'
+import { encodeTransferLink } from '@/lib/encode'
 import { translations } from '@/lib/i18n'
 
 // --- Mocks ---
@@ -78,7 +78,7 @@ import PayPage from '../[id]/page'
 // --- Helpers ---
 
 function makeTestnetLink() {
-  return encodePaymentLink({
+  return encodeTransferLink({
     address: '0x1234567890abcdef1234567890abcdef12345678',
     token: 'ETH',
     amount: '0.01',

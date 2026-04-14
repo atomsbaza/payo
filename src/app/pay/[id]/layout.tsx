@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { decodePaymentLink } from '@/lib/encode'
+import { decodeTransferLink } from '@/lib/encode'
 import { generateOgMetadata } from '@/lib/og-metadata'
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const data = decodePaymentLink(id)
+  const data = decodeTransferLink(id)
   const url = `/pay/${id}`
   return generateOgMetadata({ data, url })
 }

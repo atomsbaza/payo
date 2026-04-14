@@ -1,8 +1,8 @@
 // src/lib/webhookPayload.ts — Webhook payload types & builder functions
 
-export type WebhookEventType = 'payment_completed' | 'link_created' | 'link_deactivated' | 'test'
+export type WebhookEventType = 'transfer_completed' | 'link_created' | 'link_deactivated' | 'test'
 
-export type PaymentCompletedData = {
+export type TransferCompletedData = {
   payerAddress: string
   recipientAddress: string
   amount: string
@@ -35,12 +35,12 @@ export type WebhookPayload = {
   event: WebhookEventType
   timestamp: string // ISO 8601
   linkId: string
-  data: PaymentCompletedData | LinkCreatedData | LinkDeactivatedData | TestData
+  data: TransferCompletedData | LinkCreatedData | LinkDeactivatedData | TestData
 }
 
-export function buildPaymentCompletedPayload(linkId: string, data: PaymentCompletedData): WebhookPayload {
+export function buildTransferCompletedPayload(linkId: string, data: TransferCompletedData): WebhookPayload {
   return {
-    event: 'payment_completed',
+    event: 'transfer_completed',
     timestamp: new Date().toISOString(),
     linkId,
     data,

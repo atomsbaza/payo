@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import {
-  buildPaymentCompletedPayload,
+  buildTransferCompletedPayload,
   buildLinkCreatedPayload,
   buildLinkDeactivatedPayload,
 } from '@/lib/webhookPayload'
@@ -76,13 +76,13 @@ function isValidIso8601(s: string): boolean {
 // --- Tests ---
 
 describe('Feature: n8n-webhook, Property 4: Payload structure completeness', () => {
-  it('payment_completed payload has correct event, valid timestamp, non-empty linkId, and all required data fields', () => {
+  it('transfer_completed payload has correct event, valid timestamp, non-empty linkId, and all required data fields', () => {
     fc.assert(
       fc.property(linkIdArb, paymentCompletedDataArb, (linkId, data) => {
-        const payload = buildPaymentCompletedPayload(linkId, data)
+        const payload = buildTransferCompletedPayload(linkId, data)
 
         // (a) event field matches event type
-        expect(payload.event).toBe('payment_completed')
+        expect(payload.event).toBe('transfer_completed')
 
         // (b) timestamp is valid ISO 8601
         expect(isValidIso8601(payload.timestamp)).toBe(true)
@@ -171,10 +171,10 @@ describe('Feature: n8n-webhook, Property 4: Payload structure completeness', () 
  */
 
 describe('Feature: n8n-webhook, Property 5: Payload JSON round-trip', () => {
-  it('payment_completed payload survives JSON round-trip', () => {
+  it('transfer_completed payload survives JSON round-trip', () => {
     fc.assert(
       fc.property(linkIdArb, paymentCompletedDataArb, (linkId, data) => {
-        const payload = buildPaymentCompletedPayload(linkId, data)
+        const payload = buildTransferCompletedPayload(linkId, data)
         const roundTripped = JSON.parse(JSON.stringify(payload))
         expect(roundTripped).toEqual(payload)
       }),

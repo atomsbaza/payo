@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { encodePaymentLink, type PaymentLinkData } from '@/lib/encode'
-import { signPaymentLink } from '@/lib/hmac'
+import { encodeTransferLink, type TransferLinkData } from '@/lib/encode'
+import { signTransferLink } from '@/lib/hmac'
 
 /**
  * Task 12.3: Backward compatibility unit test
@@ -52,9 +52,9 @@ describe('Task 12.3: Backward compatibility — legacy HMAC-based links via GET 
       memo: 'Legacy test payment',
       chainId: 84532,
     }
-    const signature = signPaymentLink(original)
-    const signedData: PaymentLinkData = { ...original, signature }
-    const linkId = encodePaymentLink(signedData)
+    const signature = signTransferLink(original)
+    const signedData: TransferLinkData = { ...original, signature }
+    const linkId = encodeTransferLink(signedData)
 
     // 2. Call GET /api/links/[encoded_id]
     const req = new NextRequest(`http://localhost:3000/api/links/${linkId}`)
@@ -91,15 +91,15 @@ describe('Task 12.3: Backward compatibility — legacy HMAC-based links via GET 
       memo: 'Tampered test',
       chainId: 84532,
     }
-    const signature = signPaymentLink(original)
+    const signature = signTransferLink(original)
 
     // Tamper: change the address but keep the original signature
-    const tampered: PaymentLinkData = {
+    const tampered: TransferLinkData = {
       ...original,
       address: '0x1111111111111111111111111111111111111111',
       signature,
     }
-    const linkId = encodePaymentLink(tampered)
+    const linkId = encodeTransferLink(tampered)
 
     const req = new NextRequest(`http://localhost:3000/api/links/${linkId}`)
     const res = await GET(req, { params: Promise.resolve({ id: linkId }) })
@@ -135,9 +135,9 @@ describe('Task 12.3: Backward compatibility — legacy HMAC-based links via GET 
       memo: '',
       chainId: 8453,
     }
-    const signature = signPaymentLink(original)
-    const signedData: PaymentLinkData = { ...original, signature }
-    const linkId = encodePaymentLink(signedData)
+    const signature = signTransferLink(original)
+    const signedData: TransferLinkData = { ...original, signature }
+    const linkId = encodeTransferLink(signedData)
 
     const req = new NextRequest(`http://localhost:3000/api/links/${linkId}`)
     const res = await GET(req, { params: Promise.resolve({ id: linkId }) })

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { encodePaymentLink, decodePaymentLink, type PaymentLinkData } from '@/lib/encode'
-import { signPaymentLink, verifyPaymentLink } from '@/lib/hmac'
+import { encodeTransferLink, decodeTransferLink, type TransferLinkData } from '@/lib/encode'
+import { signTransferLink, verifyTransferLink } from '@/lib/hmac'
 
 /**
  * Feature: database-integration, Property 1: Payment link creation round-trip
@@ -61,14 +61,14 @@ describe('Feature: database-integration, Property 1: Payment link creation round
         amountArb,
         memoArb,
         (address, { chainId, token }, amount, memo) => {
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
 
           // Sign the data (mimics what POST /api/links does)
-          const signature = signPaymentLink(data)
-          const signedData: PaymentLinkData = { ...data, signature }
+          const signature = signTransferLink(data)
+          const signedData: TransferLinkData = { ...data, signature }
 
           // Encode to link ID (base64url)
-          const linkId = encodePaymentLink(signedData)
+          const linkId = encodeTransferLink(signedData)
 
           // linkId must be a non-empty string
           expect(linkId).toBeTruthy()
@@ -76,7 +76,7 @@ describe('Feature: database-integration, Property 1: Payment link creation round
           expect(linkId.length).toBeGreaterThan(0)
 
           // Decode back
-          const decoded = decodePaymentLink(linkId)
+          const decoded = decodeTransferLink(linkId)
           expect(decoded).not.toBeNull()
 
           // All fields must match the original signed data
@@ -104,18 +104,18 @@ describe('Feature: database-integration, Property 1: Payment link creation round
         amountArb,
         memoArb,
         (address, { chainId, token }, amount, memo) => {
-          const data: PaymentLinkData = { address, token, amount, memo, chainId }
+          const data: TransferLinkData = { address, token, amount, memo, chainId }
 
-          const signature = signPaymentLink(data)
-          const signedData: PaymentLinkData = { ...data, signature }
+          const signature = signTransferLink(data)
+          const signedData: TransferLinkData = { ...data, signature }
 
           // Round-trip through encode/decode
-          const linkId = encodePaymentLink(signedData)
-          const decoded = decodePaymentLink(linkId)
+          const linkId = encodeTransferLink(signedData)
+          const decoded = decodeTransferLink(linkId)
           expect(decoded).not.toBeNull()
 
           // Verify HMAC on the decoded data
-          const isValid = verifyPaymentLink(decoded!)
+          const isValid = verifyTransferLink(decoded!)
           expect(isValid).toBe(true)
         },
       ),

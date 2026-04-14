@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import * as fc from 'fast-check'
 import { render, screen, cleanup, act } from '@testing-library/react'
 import { Suspense } from 'react'
-import { encodePaymentLink } from '@/lib/encode'
+import { encodeTransferLink } from '@/lib/encode'
 import { translations } from '@/lib/i18n'
 
 /**
@@ -67,7 +67,7 @@ vi.mock('wagmi', () => ({
 }))
 
 // Valid encoded payment link for testing
-const validPaymentId = encodePaymentLink({
+const validPaymentId = encodeTransferLink({
   address: '0x1234567890abcdef1234567890abcdef12345678',
   token: 'ETH',
   amount: '1.0',

@@ -14,7 +14,7 @@ export const UsernameSchema = z
 
 /**
  * Validate that a chain ID is a positive integer (> 0).
- * Mirrors the database CHECK constraint on payment_links.chain_id.
+ * Mirrors the database CHECK constraint on transfer_links.chain_id.
  */
 export function validateChainId(chainId: number): { valid: true } | { valid: false; reason: string } {
   if (!Number.isInteger(chainId) || chainId <= 0) {
@@ -23,7 +23,7 @@ export function validateChainId(chainId: number): { valid: true } | { valid: fal
   return { valid: true }
 }
 
-export const PaymentLinkSchema = z.object({
+export const TransferLinkSchema = z.object({
   address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
   token: z.string(),
   amount: z.string().refine(
@@ -44,19 +44,19 @@ export const PaymentLinkSchema = z.object({
   }
 })
 
-export type ValidatedPaymentLink = z.infer<typeof PaymentLinkSchema>
+export type ValidatedTransferLink = z.infer<typeof TransferLinkSchema>
 
-export function validatePaymentLink(
+export function validateTransferLink(
   data: unknown
-): { valid: true; data: ValidatedPaymentLink } | { valid: false; reason: string } {
-  const result = PaymentLinkSchema.safeParse(data)
+): { valid: true; data: ValidatedTransferLink } | { valid: false; reason: string } {
+  const result = TransferLinkSchema.safeParse(data)
   if (!result.success) {
     return { valid: false, reason: result.error.issues[0]?.message ?? 'Invalid data' }
   }
   return { valid: true, data: result.data }
 }
 
-/** Subset of payment_links fields exposed by the Profile API */
+/** Subset of transfer_links fields exposed by the Profile API */
 export type PublicLink = {
   linkId: string
   token: string

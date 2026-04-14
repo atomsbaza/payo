@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { encodePaymentLink, type PaymentLinkData } from '@/lib/encode'
-import { CreateLinkRequestSchema, validateChainId, validatePaymentLink } from '@/lib/validate'
-import { signPaymentLink } from '@/lib/hmac'
+import { encodeTransferLink, type TransferLinkData } from '@/lib/encode'
+import { CreateLinkRequestSchema, validateChainId, validateTransferLink } from '@/lib/validate'
+import { signTransferLink } from '@/lib/hmac'
 import { createRateLimiter } from '@/lib/rate-limit'
 import { isDatabaseConfigured, getDb } from '@/lib/db'
-import { paymentLinks, users } from '@/lib/schema'
+import { transferLinks, users } from '@/lib/schema'
 import { count, eq } from 'drizzle-orm'
 import { dispatchWebhook } from '@/lib/webhook'
 import { buildLinkCreatedPayload } from '@/lib/webhookPayload'
@@ -21,8 +21,8 @@ export async function GET() {
       const db = getDb()
       const result = await db
         .select({ value: count() })
-        .from(paymentLinks)
-        .where(eq(paymentLinks.isActive, true))
+        .from(transferLinks)
+        .where(eq(transferLinks.isActive, true))
       return NextResponse.json({ count: result[0]?.value ?? 0 })
     } catch {
       // If DB query fails, fall back to in-memory counter
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const validated = result.data
 
     // Validate chain and token against registry
-    const chainTokenValidation = validatePaymentLink({
+    const chainTokenValidation = validateTransferLink({
       address: validated.address,
       token: validated.token,
       amount: validated.amount,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     // Truncate memo to 200 chars
     const memo = validated.memo.slice(0, 200)
 
-    const data: PaymentLinkData = {
+    const data: TransferLinkData = {
       address: validated.address,
       token: validated.token,
       amount: validated.amount,
@@ -82,10 +82,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Sign with HMAC
-    const signature = signPaymentLink(data)
-    const signedData: PaymentLinkData = { ...data, signature }
+    const signature = signTransferLink(data)
+    const signedData: TransferLinkData = { ...data, signature }
 
-    const id = encodePaymentLink(signedData)
+    const id = encodeTransferLink(signedData)
     const baseUrl = req.nextUrl.origin
     const url = `${baseUrl}/pay/${id}`
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
       try {
         const db = getDb()
-        await db.insert(paymentLinks).values({
+        await db.insert(transferLinks).values({
           linkId: id,
           ownerAddress: validated.address,
           recipient: validated.address,
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
           signature: signature,
           singleUse: validated.singleUse ?? false,
         }).onConflictDoUpdate({
-          target: paymentLinks.linkId,
+          target: transferLinks.linkId,
           set: { updatedAt: new Date() },
         })
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isDatabaseConfigured, getDb } from '@/lib/db'
-import { users, paymentLinks } from '@/lib/schema'
+import { users, transferLinks } from '@/lib/schema'
 import { UsernameSchema } from '@/lib/validate'
 import { createRateLimiter } from '@/lib/rate-limit'
 import { eq, and, or, isNull, gt } from 'drizzle-orm'
@@ -67,21 +67,21 @@ export async function GET(
     const now = new Date()
     const links = await db
       .select({
-        linkId: paymentLinks.linkId,
-        token: paymentLinks.token,
-        amount: paymentLinks.amount,
-        memo: paymentLinks.memo,
-        chainId: paymentLinks.chainId,
-        expiresAt: paymentLinks.expiresAt,
+        linkId: transferLinks.linkId,
+        token: transferLinks.token,
+        amount: transferLinks.amount,
+        memo: transferLinks.memo,
+        chainId: transferLinks.chainId,
+        expiresAt: transferLinks.expiresAt,
       })
-      .from(paymentLinks)
+      .from(transferLinks)
       .where(
         and(
-          eq(paymentLinks.ownerAddress, user.address),
-          eq(paymentLinks.isActive, true),
+          eq(transferLinks.ownerAddress, user.address),
+          eq(transferLinks.isActive, true),
           or(
-            isNull(paymentLinks.expiresAt),
-            gt(paymentLinks.expiresAt, now),
+            isNull(transferLinks.expiresAt),
+            gt(transferLinks.expiresAt, now),
           ),
         ),
       )

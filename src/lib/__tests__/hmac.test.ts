@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { signPaymentLink, verifyPaymentLink } from '../hmac'
+import { signTransferLink, verifyTransferLink } from '../hmac'
 
 // Arbitrary: valid Ethereum address
 const hexCharArb = fc.constantFrom(...'0123456789abcdef'.split(''))
@@ -27,9 +27,9 @@ describe('HMAC Link Integrity', () => {
   it('sign then verify is a round-trip (Property 4)', () => {
     fc.assert(
       fc.property(validPaymentLinkArb, (data) => {
-        const signature = signPaymentLink(data)
+        const signature = signTransferLink(data)
         const dataWithSignature = { ...data, signature }
-        expect(verifyPaymentLink(dataWithSignature)).toBe(true)
+        expect(verifyTransferLink(dataWithSignature)).toBe(true)
       }),
       { numRuns: 100 }
     )
@@ -49,7 +49,7 @@ describe('HMAC Link Integrity', () => {
 
     fc.assert(
       fc.property(validPaymentLinkArb, tamperArb, fc.string({ minLength: 1, maxLength: 50 }), (data, field, noise) => {
-        const signature = signPaymentLink(data)
+        const signature = signTransferLink(data)
         const signed = { ...data, signature }
 
         // Create a tampered copy by modifying the chosen field
@@ -75,7 +75,7 @@ describe('HMAC Link Integrity', () => {
             break
         }
 
-        expect(verifyPaymentLink(tampered)).toBe(false)
+        expect(verifyTransferLink(tampered)).toBe(false)
       }),
       { numRuns: 100 }
     )

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { DEMO_PAYMENT_DATA, shortAddress } from '@/lib/encode'
+import { DEMO_TRANSFER_DATA, shortAddress } from '@/lib/encode'
 import { DEMO_TX_HASH } from '@/lib/demo'
 import { DemoBadge } from '@/components/DemoBadge'
 import { DemoStepIndicator } from '@/components/DemoStepIndicator'
@@ -32,13 +32,13 @@ export default function DemoSuccessPage() {
             <div className="flex justify-between">
               <span className="text-gray-500">{t.labelAmount}</span>
               <span className="font-medium">
-                {DEMO_PAYMENT_DATA.amount} {DEMO_PAYMENT_DATA.token}
+                {DEMO_TRANSFER_DATA.amount} {DEMO_TRANSFER_DATA.token}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-500">{t.labelRecipient}</span>
               <span className="font-mono text-gray-200 text-xs sm:text-sm">
-                {shortAddress(DEMO_PAYMENT_DATA.address)}
+                {shortAddress(DEMO_TRANSFER_DATA.address)}
               </span>
             </div>
             <div className="flex justify-between items-center">

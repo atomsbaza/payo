@@ -9,7 +9,7 @@ CREATE TABLE "link_events" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "payment_links" (
+CREATE TABLE "transfer_links" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"link_id" text NOT NULL,
 	"owner_address" text NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE "payment_links" (
 	"deactivated_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "payment_links_link_id_unique" UNIQUE("link_id")
+	CONSTRAINT "transfer_links_link_id_unique" UNIQUE("link_id")
 );
 --> statement-breakpoint
 CREATE TABLE "rate_limit_log" (
@@ -65,4 +65,4 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_address_unique" UNIQUE("address")
 );
 --> statement-breakpoint
-ALTER TABLE "link_events" ADD CONSTRAINT "link_events_link_id_payment_links_link_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."payment_links"("link_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "link_events" ADD CONSTRAINT "link_events_link_id_transfer_links_link_id_fk" FOREIGN KEY ("link_id") REFERENCES "public"."transfer_links"("link_id") ON DELETE cascade ON UPDATE no action;

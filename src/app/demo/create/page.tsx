@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { DEMO_PAYMENT_DATA, encodePaymentLink, shortAddress } from '@/lib/encode'
+import { DEMO_TRANSFER_DATA, encodeTransferLink, shortAddress } from '@/lib/encode'
 import { DemoBadge } from '@/components/DemoBadge'
 import { DemoStepIndicator } from '@/components/DemoStepIndicator'
 import { DemoNavbar } from '@/components/DemoNavbar'
@@ -14,7 +14,7 @@ export default function DemoCreatePage() {
   const { t } = useLang()
 
   const qrUrl = useMemo(() => {
-    const encoded = encodePaymentLink(DEMO_PAYMENT_DATA)
+    const encoded = encodeTransferLink(DEMO_TRANSFER_DATA)
     return typeof window !== 'undefined'
       ? `${window.location.origin}/pay/${encoded}`
       : `/pay/${encoded}`
@@ -33,27 +33,27 @@ export default function DemoCreatePage() {
           <p className="text-sm sm:text-base text-gray-400">{t.demoCreateDesc}</p>
         </div>
 
-        {/* Read-only display of DEMO_PAYMENT_DATA */}
+        {/* Read-only display of DEMO_TRANSFER_DATA */}
         <div className="space-y-3 mb-6">
           <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <span className="text-sm text-gray-400">{t.labelRecipient}</span>
-            <span className="text-sm font-medium">{shortAddress(DEMO_PAYMENT_DATA.address)}</span>
+            <span className="text-sm font-medium">{shortAddress(DEMO_TRANSFER_DATA.address)}</span>
           </div>
           <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <span className="text-sm text-gray-400">{t.labelTokenField}</span>
-            <span className="text-sm font-medium">{DEMO_PAYMENT_DATA.token}</span>
+            <span className="text-sm font-medium">{DEMO_TRANSFER_DATA.token}</span>
           </div>
           <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <span className="text-sm text-gray-400">{t.labelAmount}</span>
-            <span className="text-sm font-medium">{DEMO_PAYMENT_DATA.amount} {DEMO_PAYMENT_DATA.token}</span>
+            <span className="text-sm font-medium">{DEMO_TRANSFER_DATA.amount} {DEMO_TRANSFER_DATA.token}</span>
           </div>
           <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <span className="text-sm text-gray-400">{t.labelMemo}</span>
-            <span className="text-sm font-medium">{DEMO_PAYMENT_DATA.memo}</span>
+            <span className="text-sm font-medium">{DEMO_TRANSFER_DATA.memo}</span>
           </div>
           <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3">
             <span className="text-sm text-gray-400">{t.labelNetwork}</span>
-            <span className="text-sm font-medium">Chain {DEMO_PAYMENT_DATA.chainId}</span>
+            <span className="text-sm font-medium">Chain {DEMO_TRANSFER_DATA.chainId}</span>
           </div>
         </div>
 

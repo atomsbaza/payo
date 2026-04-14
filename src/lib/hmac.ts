@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import type { PaymentLinkData } from './encode'
+import type { TransferLinkData } from './encode'
 
 let _secretChecked = false
 
@@ -23,7 +23,7 @@ function getSecret(): string {
 /**
  * สร้าง HMAC-SHA256 signature จาก payment link data
  */
-export function signPaymentLink(data: Omit<PaymentLinkData, 'signature'>): string {
+export function signTransferLink(data: Omit<TransferLinkData, 'signature'>): string {
   const payload = JSON.stringify({
     address: data.address,
     token: data.token,
@@ -38,12 +38,12 @@ export function signPaymentLink(data: Omit<PaymentLinkData, 'signature'>): strin
 /**
  * ตรวจสอบว่า signature ตรงกับข้อมูล
  */
-export function verifyPaymentLink(
-  data: PaymentLinkData & { signature?: string }
+export function verifyTransferLink(
+  data: TransferLinkData & { signature?: string }
 ): boolean {
   if (!data.signature) return false
   const { signature, ...rest } = data
-  const expected = signPaymentLink(rest)
+  const expected = signTransferLink(rest)
   try {
     return crypto.timingSafeEqual(
       Buffer.from(signature, 'hex'),

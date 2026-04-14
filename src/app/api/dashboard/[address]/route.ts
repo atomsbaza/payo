@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isDatabaseConfigured, getDb } from '@/lib/db'
-import { paymentLinks, users } from '@/lib/schema'
+import { transferLinks, users } from '@/lib/schema'
 import { eq, desc } from 'drizzle-orm'
 
 const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
@@ -30,12 +30,12 @@ export async function GET(
   try {
     const db = getDb()
 
-    // Query payment links for this owner, ordered by created_at DESC
+    // Query transfer links for this owner, ordered by created_at DESC
     const links = await db
       .select()
-      .from(paymentLinks)
-      .where(eq(paymentLinks.ownerAddress, address))
-      .orderBy(desc(paymentLinks.createdAt))
+      .from(transferLinks)
+      .where(eq(transferLinks.ownerAddress, address))
+      .orderBy(desc(transferLinks.createdAt))
 
     // Upsert user row — insert if new, update last_seen if existing
     const now = new Date()

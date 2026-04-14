@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { encodePaymentLink, decodePaymentLink, type PaymentLinkData } from '@/lib/encode'
+import { encodeTransferLink, decodeTransferLink, type TransferLinkData } from '@/lib/encode'
 
 /**
  * Feature: demo-flow-revamp, Property 1: Payment link encode/decode round-trip
@@ -46,7 +46,7 @@ const memoArb = fc
 const chainIdArb = fc.integer({ min: 1, max: 999999 })
 
 /** Valid PaymentLinkData arbitrary */
-const paymentLinkDataArb: fc.Arbitrary<PaymentLinkData> = fc.record({
+const paymentLinkDataArb: fc.Arbitrary<TransferLinkData> = fc.record({
   address: ethAddressArb,
   token: tokenArb,
   amount: amountArb,
@@ -63,8 +63,8 @@ describe('Property 1: Payment link encode/decode round-trip', () => {
   it('decodePaymentLink(encodePaymentLink(data)) deep equals data', () => {
     fc.assert(
       fc.property(paymentLinkDataArb, (data) => {
-        const encoded = encodePaymentLink(data)
-        const decoded = decodePaymentLink(encoded)
+        const encoded = encodeTransferLink(data)
+        const decoded = decodeTransferLink(encoded)
 
         expect(decoded).not.toBeNull()
         expect(decoded).toEqual(data)

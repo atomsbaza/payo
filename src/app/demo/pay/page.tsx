@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DEMO_PAYMENT_DATA, shortAddress } from '@/lib/encode'
+import { DEMO_TRANSFER_DATA, shortAddress } from '@/lib/encode'
 import { DemoBadge } from '@/components/DemoBadge'
 import { DemoStepIndicator } from '@/components/DemoStepIndicator'
 import { DemoNavbar } from '@/components/DemoNavbar'
@@ -35,25 +35,25 @@ export default function DemoPayPage() {
         <div className="bg-white/[0.03] ring-1 ring-white/10 rounded-2xl p-5 sm:p-6 mb-6">
           <div className="text-center mb-5">
             <div className="flex items-center justify-center mx-auto mb-3">
-              <Jazzicon address={DEMO_PAYMENT_DATA.address} size={56} />
+              <Jazzicon address={DEMO_TRANSFER_DATA.address} size={56} />
             </div>
-            <p className="text-gray-400 text-sm">&ldquo;{DEMO_PAYMENT_DATA.memo}&rdquo;</p>
+            <p className="text-gray-400 text-sm">&ldquo;{DEMO_TRANSFER_DATA.memo}&rdquo;</p>
           </div>
 
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-gray-500">{t.labelRecipient}</span>
               <span className="font-mono text-gray-200 text-xs sm:text-sm">
-                {shortAddress(DEMO_PAYMENT_DATA.address)}
+                {shortAddress(DEMO_TRANSFER_DATA.address)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">{t.labelTokenField}</span>
-              <span className="font-medium">{DEMO_PAYMENT_DATA.token}</span>
+              <span className="font-medium">{DEMO_TRANSFER_DATA.token}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">{t.labelNetwork}</span>
-              <span className="text-green-400 text-xs">Chain {DEMO_PAYMENT_DATA.chainId}</span>
+              <span className="text-green-400 text-xs">Chain {DEMO_TRANSFER_DATA.chainId}</span>
             </div>
           </div>
         </div>

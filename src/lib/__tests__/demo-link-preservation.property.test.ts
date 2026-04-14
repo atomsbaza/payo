@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-import { encodePaymentLink, decodePaymentLink, type PaymentLinkData } from '../encode'
+import { encodeTransferLink, decodeTransferLink, type TransferLinkData } from '../encode'
 
 /**
  * **Validates: Requirements 3.1, 3.2, 3.3, 3.4**
@@ -53,7 +53,7 @@ const expiresAtArb = fc.option(
 )
 
 /** Valid PaymentLinkData arbitrary */
-const paymentLinkDataArb: fc.Arbitrary<PaymentLinkData> = fc.record({
+const paymentLinkDataArb: fc.Arbitrary<TransferLinkData> = fc.record({
   address: ethAddressArb,
   token: tokenSymbolArb,
   amount: amountArb,
@@ -82,8 +82,8 @@ describe('Preservation: Payment Link encode/decode baseline behavior', () => {
   it('encode → decode roundtrip preserves all PaymentLinkData fields', () => {
     fc.assert(
       fc.property(paymentLinkDataArb, (data) => {
-        const encoded = encodePaymentLink(data)
-        const decoded = decodePaymentLink(encoded)
+        const encoded = encodeTransferLink(data)
+        const decoded = decodeTransferLink(encoded)
 
         expect(decoded).not.toBe(null)
         expect(decoded!.address).toBe(data.address)
@@ -104,7 +104,7 @@ describe('Preservation: Payment Link encode/decode baseline behavior', () => {
   it('decodePaymentLink returns null for invalid non-demo strings', () => {
     fc.assert(
       fc.property(invalidStringArb, (s) => {
-        const result = decodePaymentLink(s)
+        const result = decodeTransferLink(s)
         expect(result).toBe(null)
       }),
       { numRuns: 100 },
