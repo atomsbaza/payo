@@ -149,11 +149,14 @@ Uses Neon (serverless PostgreSQL) + Drizzle ORM. The app works without a databas
 | Table | Purpose |
 |-------|---------|
 | `users` | Wallet address + ENS cache |
-| `payment_links` | Created transfer links |
+| `transfer_links` | Created transfer links |
 | `link_events` | Event log (viewed, paid, expired, tamper_blocked) |
 | `transactions` | Basescan TX history cache |
+| `webhook_registrations` | Registered webhooks per wallet |
+| `webhook_logs` | Webhook delivery history |
 | `rate_limit_log` | Persistent rate limiting |
 | `push_tokens` | APNs device tokens |
+| `push_subscriptions` | Web push subscriptions |
 | `feedback` | Contact form submissions |
 
 ```bash
@@ -172,7 +175,6 @@ npm run db:push       # Push schema to Neon
 | `GET` | `/api/links/[id]` | Decode + verify HMAC + log view |
 | `POST` | `/api/links/[id]` | Confirm transfer (increment pay count, fire webhook) |
 | `GET` | `/api/tx/[address]` | Fetch TX history from Basescan |
-| `GET` | `/api/fees/[address]` | Fetch fee TX history |
 | `GET` | `/api/dashboard/[address]` | Dashboard stats |
 | `GET/PUT` | `/api/username/[address]` | Get / set username |
 | `GET` | `/api/profile/[slug]` | Public profile data |
