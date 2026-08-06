@@ -21,7 +21,7 @@
     "canvas-confetti": "^1.9.4",
     "drizzle-orm": "^0.45.1",
     "jspdf": "^4.2.1",
-    "next": "16.2.1",
+    "next": "16.3.0",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
