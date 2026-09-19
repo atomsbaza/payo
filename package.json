@@ -45,7 +45,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "fast-check": "^4.6.0",
-    "hardhat": "^3.1.12",
+    "hardhat": "^3.17.0",
     "jsdom": "^26.1.0",
     "tailwindcss": "^4",
     "typescript": "^5",
