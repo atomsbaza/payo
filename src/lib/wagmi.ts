@@ -12,9 +12,6 @@ const WAGMI_CHAIN_MAP: Record<number, Chain> = {
   42161: arbitrum,
 }
 
-// Set smartWalletOnly preference before config creation
-// This ensures Coinbase Smart Wallet uses passkey/email flow
-coinbaseWallet.preference = 'smartWalletOnly'
 
 const activeChains = getSupportedChains()
   .map(c => WAGMI_CHAIN_MAP[c.chainId])

@@ -1,4 +1,12 @@
-import type { FeeTx } from '@/app/api/fees/[address]/route'
+export type FeeTx = {
+  hash: string
+  payer: string
+  payee: string
+  feeAmount: string
+  tokenSymbol?: string
+  tokenDecimal?: string
+  timeStamp: string
+}
 import type { UnifiedTx } from '@/app/api/tx/[address]/route'
 import type { SavedLink } from '@/lib/validate-storage'
 import { formatUnits } from 'viem'

@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useEffect, useMemo, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useAccount, useBalance, useReadContract, useSendTransaction, useWriteContract, useWaitForTransactionReceipt, useEnsName } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit'
@@ -12,8 +12,7 @@ import { isSelfPayment } from '@/lib/self-payment'
 import { ERC20_ABI } from '@/lib/tokens'
 import { getToken } from '@/lib/tokenRegistry'
 import { getChain, isProduction } from '@/lib/chainRegistry'
-import { calculateFee, formatFeePercent } from '@/lib/fee'
-import { getContractAddress, CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkFeeABI, DEFAULT_FEE_RATE } from '@/lib/contract'
+import { getContractAddress, CRYPTO_PAY_LINK_ADDRESS, CryptoPayLinkABI } from '@/lib/contract'
 import { buildReceiptData, type ReceiptData } from '@/lib/receiptData'
 import { WrongNetworkBanner } from '@/components/WrongNetworkBanner'
 import { SuccessView } from '@/components/SuccessView'
@@ -46,7 +45,6 @@ export default function PayPage({ params }: Props) {
   const [confirmedAt, setConfirmedAt] = useState<number>(0)
   const [pollStartTime, setPollStartTime] = useState<number>(0)
   const [pollTimedOut, setPollTimedOut] = useState(false)
-  const [feeExpanded, setFeeExpanded] = useState(false)
   const [linkDeactivated, setLinkDeactivated] = useState(false)
 
   const data = isDemoLink(id) ? DEMO_TRANSFER_DATA : decodeTransferLink(id)
@@ -111,17 +109,7 @@ export default function PayPage({ params }: Props) {
     ? parseFloat(formatUnits(balanceRaw, token.decimals)).toFixed(token.decimals === 18 ? 4 : 2)
     : null
 
-  // Whether the fee contract is deployed and configured
   const contractReady = !!contractAddress
-
-  // Read fee rate from the deployed contract; fall back to DEFAULT_FEE_RATE on error
-  const { data: contractFeeRate, isError: feeRateError } = useReadContract({
-    address: contractAddress,
-    abi: CryptoPayLinkFeeABI,
-    functionName: 'feeRate',
-    query: { enabled: contractReady },
-  })
-  const feeRate = contractReady && contractFeeRate !== undefined ? (contractFeeRate as bigint) : DEFAULT_FEE_RATE
 
   const { writeContractAsync, isPending: isContractPending } = useWriteContract()
   const { sendTransactionAsync, isPending: isDirectPending } = useSendTransaction()
@@ -129,21 +117,6 @@ export default function PayPage({ params }: Props) {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   const effectiveAmount = data?.amount || customAmount
-
-  // Compute fee breakdown whenever effectiveAmount changes
-  const feeBreakdown = useMemo(() => {
-    if (!effectiveAmount || !token) return null
-    try {
-      const totalWei = token.address === 'native'
-        ? parseEther(effectiveAmount)
-        : parseUnits(effectiveAmount, token.decimals)
-      if (totalWei <= 0n) return null
-      const { fee, net } = calculateFee(totalWei, feeRate)
-      return { total: totalWei, fee, net, feeRate }
-    } catch {
-      return null
-    }
-  }, [effectiveAmount, token, feeRate])
 
   // Confetti on success 🎉
   useEffect(() => {
@@ -253,11 +226,11 @@ export default function PayPage({ params }: Props) {
       let hash: `0x${string}`
 
       if (contractReady) {
-        // Use the fee contract
+        // Use the feeless contract
         if (token.address === 'native') {
           hash = await writeContractAsync({
             address: contractAddress!,
-            abi: CryptoPayLinkFeeABI,
+            abi: CryptoPayLinkABI,
             functionName: 'payNative',
             args: [data.address as `0x${string}`, data.memo || ''],
             value: parseEther(effectiveAmount),
@@ -265,7 +238,7 @@ export default function PayPage({ params }: Props) {
         } else {
           hash = await writeContractAsync({
             address: contractAddress!,
-            abi: CryptoPayLinkFeeABI,
+            abi: CryptoPayLinkABI,
             functionName: 'payToken',
             args: [
               data.address as `0x${string}`,
@@ -276,7 +249,7 @@ export default function PayPage({ params }: Props) {
           })
         }
       } else {
-        // Fallback: direct transfer (no fee contract deployed)
+        // Fallback: direct transfer (no contract deployed)
         if (token.address === 'native') {
           hash = await sendTransactionAsync({
             to: data.address as `0x${string}`,
@@ -322,10 +295,6 @@ export default function PayPage({ params }: Props) {
       blockExplorerUrl: chain?.blockExplorerUrl ?? 'https://sepolia.basescan.org',
       memo: data.memo ?? '',
       confirmedAt,
-      feeTotal: feeBreakdown ? feeBreakdown.total.toString() : '0',
-      feeAmount: feeBreakdown ? feeBreakdown.fee.toString() : '0',
-      feeNet: feeBreakdown ? feeBreakdown.net.toString() : '0',
-      feeRateBps: feeBreakdown ? feeBreakdown.feeRate.toString() : '0',
       tokenDecimals: token?.decimals ?? 18,
     })
 
@@ -475,53 +444,6 @@ export default function PayPage({ params }: Props) {
               </div>
             )}
           </div>
-
-          {/* Fee breakdown toggle */}
-          {feeBreakdown && token && contractReady && (
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <button
-                onClick={() => setFeeExpanded(!feeExpanded)}
-                aria-expanded={feeExpanded}
-                className="w-full flex justify-between items-center text-sm text-gray-400 hover:text-gray-200 transition-colors"
-              >
-                <span>{feeExpanded ? t.hideFeeBreakdown : t.showFeeBreakdown}</span>
-                <span>{feeExpanded ? '▴' : '▾'}</span>
-              </button>
-
-              {feeExpanded && (
-                <div className="mt-3 space-y-2 text-sm">
-                  {feeRateError && (
-                    <p className="text-amber-400 text-xs mb-2">⚠️ Could not read fee rate from contract, using default</p>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">{t.receiptFeeRate}</span>
-                    <span className="text-gray-300">{formatFeePercent(feeRate)}</span>
-                  </div>
-                  {feeBreakdown.fee === 0n ? (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">{t.receiptFeeAmount}</span>
-                      <span className="text-green-400">No donation</span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">{t.receiptFeeTotal}</span>
-                        <span className="text-gray-200">{formatUnits(feeBreakdown.total, token.decimals)} {data.token}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">{t.receiptFeeAmount}</span>
-                        <span className="text-amber-400">-{formatUnits(feeBreakdown.fee, token.decimals)} {data.token}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">{t.receiptFeeNet}</span>
-                        <span className="text-green-400">{formatUnits(feeBreakdown.net, token.decimals)} {data.token}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Custom amount if not fixed */}
