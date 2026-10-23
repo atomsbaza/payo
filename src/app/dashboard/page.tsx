@@ -11,7 +11,6 @@ import { Navbar } from '@/components/Navbar'
 import Skeleton from '@/components/Skeleton'
 import { QrLinkModal } from '@/components/QrLinkModal'
 import { useLang } from '@/context/LangContext'
-import { useIsCompanyWallet } from '@/hooks/useIsCompanyWallet'
 import { useCoinGeckoPrice } from '@/hooks/useCoinGeckoPrice'
 import { UsernameSection } from './UsernameSection'
 import {
@@ -22,16 +21,10 @@ import {
   aggregateByDay,
   buildCsvContent,
   matchTxToLink,
-  getVisibleTabs,
-  aggregateFeeTotals,
 } from './aggregation'
 import type { DashboardTab, TokenTotal } from './aggregation'
 import ConsolidatedUsdCard from './ConsolidatedUsdCard'
 import type { UnifiedTx } from '@/app/api/tx/[address]/route'
-import type { FeeTx } from '@/app/api/fees/[address]/route'
-import { getSupportedChains } from '@/lib/chainRegistry'
-
-const COMPANY_WALLET = process.env.NEXT_PUBLIC_COMPANY_WALLET
 
 /** 5.1 — Fiat value display component */
 function FiatLine({ token, formattedAmount }: { token: string; formattedAmount: string }) {
@@ -44,7 +37,6 @@ function FiatLine({ token, formattedAmount }: { token: string; formattedAmount: 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
   const { t, lang } = useLang()
-  const { isCompany } = useIsCompanyWallet()
   const [myLinks, setMyLinks] = useState<SavedLink[]>([])
   const [linksLoading, setLinksLoading] = useState(true)
   const [copiedUrl, setCopiedUrl] = useState('')
@@ -52,11 +44,6 @@ export default function DashboardPage() {
   const [txLoading, setTxLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<DashboardTab>('links')
   const [qrLink, setQrLink] = useState<SavedLink | null>(null)
-
-  /** Fee data state (lazy-loaded when fees tab is active) */
-  const [feeTxs, setFeeTxs] = useState<FeeTx[]>([])
-  const [feeLoading, setFeeLoading] = useState(false)
-  const [feeError, setFeeError] = useState(false)
 
   /** 5.2 — Filter state */
   const [tokenFilter, setTokenFilter] = useState<string | null>(null)
@@ -107,25 +94,6 @@ export default function DashboardPage() {
 
   // TX history fetch disabled — section hidden, avoid unnecessary DB writes
   // useEffect(() => { ... fetch /api/tx ... }, [address])
-
-  /** Lazy fetch fee transactions when fees tab is active and user is company wallet */
-  useEffect(() => {
-    if (activeTab !== 'fees' || !isCompany || !COMPANY_WALLET) return
-    setFeeLoading(true)
-    setFeeError(false)
-    const chains = getSupportedChains()
-    Promise.all(
-      chains.map(c =>
-        fetch(`/api/fees/${COMPANY_WALLET}?chainId=${c.chainId}`)
-          .then(r => r.json())
-          .then(data => data.transactions ?? [])
-          .catch(() => [])
-      )
-    )
-      .then(results => setFeeTxs(results.flat()))
-      .catch(() => { setFeeTxs([]); setFeeError(true) })
-      .finally(() => setFeeLoading(false))
-  }, [activeTab, isCompany])
 
   function handleCopy(url: string) {
     navigator.clipboard.writeText(url)
@@ -193,8 +161,8 @@ export default function DashboardPage() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1">{isCompany ? t.companyDashTitle : t.dashTitle}</h1>
-          <p className="text-sm text-gray-400">{isCompany ? t.companyDashSubtitle : t.dashSubtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1">{t.dashTitle}</h1>
+          <p className="text-sm text-gray-400">{t.dashSubtitle}</p>
         </div>
 
         {!isConnected && (
@@ -220,12 +188,6 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-xs sm:text-sm text-gray-400">{t.statsWallet}</p>
               </div>
-              {isCompany && feeTxs.length > 0 && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
-                  <p className="text-xl font-bold text-yellow-400">{feeTxs.length}</p>
-                  <p className="text-xs text-gray-400">Fee Transactions</p>
-                </div>
-              )}
             </div>
 
             {/* Username Section */}
@@ -244,18 +206,6 @@ export default function DashboardPage() {
                 {t.tabLinks}
               </button>
               {/* TX History tab hidden — buggy */}
-              {isCompany && (
-                <button
-                  onClick={() => setActiveTab('fees')}
-                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === 'fees'
-                      ? 'border-indigo-500 text-white'
-                      : 'border-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Fees
-                </button>
-              )}
               {/* Export CSV hidden with TX history tab */}
             </div>
 
@@ -383,157 +333,15 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tab: Fees (company wallet only) */}
-            {activeTab === 'fees' && (
-              <div className="space-y-3">
-                {feeLoading ? (
-                  <div className="space-y-3" data-testid="fee-skeleton">
-                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2">
-                      <Skeleton className="h-3 w-24 mb-2" />
-                      <Skeleton className="h-8 w-40" />
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-2">
-                      <Skeleton className="h-5 w-20 mb-1" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <Skeleton className="h-5 w-28 mb-2" />
-                            <Skeleton className="h-3 w-40" />
-                          </div>
-                          <Skeleton className="h-8 w-8 rounded-lg" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : feeError ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <span className="text-4xl mb-3">⚠️</span>
-                    <p className="text-gray-400 text-sm">{t.feeLoadError}</p>
-                    <button
-                      onClick={() => {
-                        setFeeError(false)
-                        setFeeLoading(true)
-                        const chains = getSupportedChains()
-                        Promise.all(
-                          chains.map(c =>
-                            fetch(`/api/fees/${COMPANY_WALLET}?chainId=${c.chainId}`)
-                              .then(r => r.json())
-                              .then(data => data.transactions ?? [])
-                              .catch(() => [])
-                          )
-                        )
-                          .then(results => setFeeTxs(results.flat()))
-                          .catch(() => { setFeeTxs([]); setFeeError(true) })
-                          .finally(() => setFeeLoading(false))
-                      }}
-                      className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-colors"
-                    >
-                      {t.feeRetry}
-                    </button>
-                  </div>
-                ) : feeTxs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <span className="text-4xl mb-3">📊</span>
-                    <p className="text-gray-400 text-sm">{t.feeNoTx}</p>
-                    <p className="text-gray-600 text-xs mt-1">{t.feeNoTxDesc}</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Aggregated fee totals per token */}
-                    {(() => {
-                      const { totals, count } = aggregateFeeTotals(feeTxs)
-                      return (
-                        <>
-                          {Object.entries(totals).map(([token, rawTotal]) => {
-                            const decimals =
-                              token === 'ETH'
-                                ? 18
-                                : parseInt(
-                                    feeTxs.find((tx) => tx.tokenSymbol === token)?.tokenDecimal ?? '18'
-                                  )
-                            const formatted = parseFloat(formatUnits(rawTotal, decimals)).toFixed(4)
-                            return (
-                              <div
-                                key={token}
-                                className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2"
-                              >
-                                <p className="text-xs text-indigo-400 mb-1">{t.feeTotalCollected(token)}</p>
-                                <p className="text-2xl font-bold">
-                                  {formatted} <span className="text-base text-gray-400">{token}</span>
-                                </p>
-                              </div>
-                            )
-                          })}
-
-                          {/* Fee transaction count */}
-                          <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-2">
-                            <p className="text-xl sm:text-2xl font-bold text-green-400">{count}</p>
-                            <p className="text-xs sm:text-sm text-gray-400">{t.feeBearingTx}</p>
-                          </div>
-                        </>
-                      )
-                    })()}
-
-                    {/* Individual fee transactions */}
-                    {feeTxs.map((tx) => {
-                      let feeDisplay: string
-                      try {
-                        if (tx.tokenSymbol && tx.tokenDecimal) {
-                          const val = parseFloat(formatUnits(BigInt(tx.feeAmount), parseInt(tx.tokenDecimal)))
-                          feeDisplay = val.toFixed(val < 0.001 ? 6 : 4)
-                        } else {
-                          const eth = parseFloat(formatUnits(BigInt(tx.feeAmount), 18))
-                          feeDisplay = eth.toFixed(eth < 0.001 ? 6 : 4)
-                        }
-                      } catch {
-                        feeDisplay = '0'
-                      }
-                      const tokenSymbol = tx.tokenSymbol ?? 'ETH'
-                      return (
-                        <div
-                          key={tx.hash}
-                          className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-colors"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <span className="text-green-400 text-xs font-semibold bg-green-400/10 px-2 py-0.5 rounded-full">
-                                + {feeDisplay} {tokenSymbol}
-                              </span>
-                              <p className="text-xs text-gray-500 mt-1.5">
-                                {t.feeFrom(shortAddress(tx.payer), formatDate(tx.timeStamp))}
-                              </p>
-                            </div>
-                            <a
-                              href={`https://sepolia.basescan.org/tx/${tx.hash}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
-                            >
-                              ↗
-                            </a>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </>
-                )}
-              </div>
-            )}
-
             {/* Tab: TX History — hidden, buggy */}
             {false && activeTab === 'history' && (
               <div className="space-y-3">
                 {txLoading ? (
                   <div className="space-y-3" data-testid="tx-skeleton">
-                    {/* Summary card skeleton */}
                     <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-2">
                       <Skeleton className="h-3 w-24 mb-2" />
                       <Skeleton className="h-8 w-40" />
                     </div>
-                    {/* 3 tx row skeletons */}
                     {[0, 1, 2].map((i) => (
                       <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
                         <div className="flex items-center justify-between gap-3">
@@ -613,7 +421,6 @@ export default function DashboardPage() {
                               {formatted}{' '}
                               <span className="text-base text-gray-400">{token}</span>
                             </p>
-                            {/* 5.1 — Fiat value display */}
                             <FiatLine token={token} formattedAmount={formatted} />
                           </div>
                         )
@@ -636,7 +443,6 @@ export default function DashboardPage() {
                               {formatted}{' '}
                               <span className="text-base text-gray-400">{token}</span>
                             </p>
-                            {/* 5.1/5.3 — Fiat value for sent totals */}
                             <FiatLine token={token} formattedAmount={formatted} />
                           </div>
                         )

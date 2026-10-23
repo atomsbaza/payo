@@ -1,7 +1,7 @@
 'use client'
 
 import { useAccount } from 'wagmi'
-import { COMPANY_WALLET } from '@/lib/contract'
+import { CRYPTO_PAY_LINK_ADDRESS as COMPANY_WALLET } from '@/lib/contract'
 
 /**
  * Pure function: case-insensitive comparison of two wallet addresses.

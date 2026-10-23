@@ -132,36 +132,6 @@ export async function generateReceiptPdf(
   })
   drawRow(t.receiptConfirmedAt, formattedDate)
 
-  // ── Fee breakdown (only when fee > 0) ──
-  const feeAmount = BigInt(data.feeAmount)
-  if (feeAmount > 0n) {
-    y += 2
-    doc.setFontSize(13)
-    doc.setTextColor(...indigo)
-    doc.setFont('helvetica', 'bold')
-    const feeHeading = locale === 'th' ? 'รายละเอียดค่าธรรมเนียม' : 'Fee Breakdown'
-    doc.text(feeHeading, marginLeft, y)
-    y += 2
-    doc.setDrawColor(...indigo)
-    doc.setLineWidth(0.3)
-    doc.line(marginLeft, y, marginLeft + contentWidth, y)
-    y += 7
-
-    doc.setFont('helvetica', 'normal')
-
-    const totalFormatted = formatWei(data.feeTotal, data.tokenDecimals)
-    drawRow(t.receiptFeeTotal, `${totalFormatted} ${data.tokenSymbol}`)
-
-    const feeFormatted = formatWei(data.feeAmount, data.tokenDecimals)
-    drawRow(t.receiptFeeAmount, `${feeFormatted} ${data.tokenSymbol}`)
-
-    const feeRatePercent = Number(BigInt(data.feeRateBps)) / 100
-    drawRow(t.receiptFeeRate, `${feeRatePercent}%`)
-
-    const netFormatted = formatWei(data.feeNet, data.tokenDecimals)
-    drawRow(t.receiptFeeNet, `${netFormatted} ${data.tokenSymbol}`)
-  }
-
   // ── Footer ──
   const footerY = doc.internal.pageSize.getHeight() - 15
   doc.setDrawColor(209, 213, 219) // gray-300

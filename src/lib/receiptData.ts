@@ -1,6 +1,5 @@
 /**
- * ReceiptData type and helpers for payment receipt generation.
- * All fee values are stored as strings (BigInt serialization) for JSON compatibility.
+ * ReceiptData type and helpers for transfer receipt generation.
  */
 
 export type ReceiptData = {
@@ -15,16 +14,11 @@ export type ReceiptData = {
   blockExplorerUrl: string
   memo: string
   confirmedAt: number          // unix timestamp ms
-  feeTotal: string             // BigInt as string (wei)
-  feeAmount: string            // BigInt as string (wei)
-  feeNet: string               // BigInt as string (wei)
-  feeRateBps: string           // BigInt as string (basis points)
   tokenDecimals: number
 }
 
 /**
  * Input shape accepted by buildReceiptData.
- * Optional fields get sensible defaults (empty string / "0").
  */
 export type BuildReceiptDataInput = {
   payerAddress: string
@@ -38,10 +32,6 @@ export type BuildReceiptDataInput = {
   blockExplorerUrl: string
   memo?: string
   confirmedAt: number
-  feeTotal?: string
-  feeAmount?: string
-  feeNet?: string
-  feeRateBps?: string
   tokenDecimals: number
 }
 
@@ -59,10 +49,6 @@ export function buildReceiptData(input: BuildReceiptDataInput): ReceiptData {
     blockExplorerUrl: input.blockExplorerUrl,
     memo: input.memo ?? '',
     confirmedAt: input.confirmedAt,
-    feeTotal: input.feeTotal ?? '0',
-    feeAmount: input.feeAmount ?? '0',
-    feeNet: input.feeNet ?? '0',
-    feeRateBps: input.feeRateBps ?? '0',
     tokenDecimals: input.tokenDecimals,
   }
 }

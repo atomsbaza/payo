@@ -16,7 +16,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { CryptoPayLinkFeeABI } from "../src/lib/contract.js";
+import { CryptoPayLinkABI } from "../src/lib/contract.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -96,7 +96,7 @@ async function main() {
 
   const hash = await walletClient.writeContract({
     address: contractAddress!,
-    abi: CryptoPayLinkFeeABI,
+    abi: CryptoPayLinkABI,
     functionName: "setFeeRate",
     args: [newRate],
   });
